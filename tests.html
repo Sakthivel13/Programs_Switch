@@ -1,0 +1,3471 @@
+{% extends "base.html" %}
+{% block title %}Tests – {{ model_name if model_name else "Select Vehicle" }}{% endblock %}
+
+{% block head %}
+<style>
+  /* ===================== GLOBAL ===================== */
+  .card { border-radius: 14px; }
+  .card-shadow { box-shadow: 0 6px 18px rgba(0,0,0,.08); }
+
+  .rounded-strip{
+    background:#fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    overflow:hidden;
+  }
+
+  .rounded-box{
+    background:#fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+  }
+
+  .log-area{
+    height: 420px;
+    background:#020617;
+    color:#e5e7eb;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size:.78rem;
+    overflow:auto;
+    padding:10px;
+    border-radius:10px;
+    white-space:pre-wrap;
+    word-wrap: break-word;
+  }
+
+  .log-area-mini{
+    height: 200px;
+    background:#020617;
+    color:#e5e7eb;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size:.75rem;
+    overflow:auto;
+    padding:8px;
+    border-radius:8px;
+    white-space:pre-wrap;
+    word-wrap: break-word;
+  }
+
+  .subtle-muted{ color:#6b7280; }
+
+  /* ===================== VEHICLE HERO STRIP ===================== */
+  .vehicle-hero{
+    display:flex;
+    gap: 12px;
+    align-items: stretch;
+    min-height: 92px;
+  }
+  .vehicle-hero .img-wrap{
+    width: 140px;
+    min-height: 92px;
+    background: linear-gradient(135deg,#e2e8f0,#f8fafc);
+    flex: 0 0 auto;
+  }
+  .vehicle-hero img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+  }
+  .vehicle-hero .meta{
+    padding: 12px 12px;
+    flex: 1 1 auto;
+    display:flex;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .vehicle-hero .meta .left .name{
+    font-weight: 800;
+    color:#111827;
+    line-height: 1.1;
+  }
+  .vehicle-hero .meta .left .desc{
+    margin-top: 4px;
+    color:#6b7280;
+    font-size: .9rem;
+  }
+  .vehicle-hero .meta .right{
+    display:flex;
+    flex-direction: column;
+    align-items:flex-end;
+    justify-content:center;
+    gap: 6px;
+  }
+
+  .vin-pill{
+    display:inline-flex;
+    align-items:center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid #e5e7eb;
+    background:#f8fafc;
+    color:#0f172a;
+    font-size: .78rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .vin-pill .mono{ font-family: ui-monospace, monospace; font-weight: 900; }
+
+  /* ===================== GRID LIST (CARDS) ===================== */
+  .grid-wrap{ padding: 18px; }
+  .grid-title{
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .grid-title h5{ font-weight: 900; margin:0; }
+
+  .tile-grid{
+    display:grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 12px;
+  }
+  .tile{
+    grid-column: span 12;
+    border: 2px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 14px;
+    background:#fff;
+    transition: all .16s ease;
+    text-decoration:none;
+    color: inherit;
+    display:flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+  }
+  .tile:hover{
+    border-color:#3b82f6;
+    box-shadow: 0 4px 12px rgba(59,130,246,.15);
+    transform: translateY(-1px);
+  }
+  .tile .left{ min-width: 0; }
+  .tile .title{
+    font-weight: 900;
+    margin:0;
+    color:#111827;
+    line-height: 1.1;
+  }
+  .tile .subtitle{
+    margin-top: 4px;
+    font-size: .9rem;
+    color:#6b7280;
+  }
+  .tile .badges{
+    display:flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content:flex-end;
+  }
+  .badge-soft{
+    font-size: .75rem;
+    padding: .3rem .55rem;
+    border-radius: 999px;
+    border: 1px solid #e5e7eb;
+    background:#f8fafc;
+    color:#334155;
+    white-space: nowrap;
+  }
+  .badge-soft.stream{ background:#fff7ed; border-color:#fed7aa; color:#9a3412; }
+  .badge-soft.single{ background:#f1f5f9; border-color:#e2e8f0; color:#334155; }
+  .badge-soft.flash{ background:#f3e8ff; border-color:#e9d5ff; color:#6b21a8; }
+  .badge-soft.dual{ background:#ecfeff; border-color:#a5f3fc; color:#155e75; }
+
+  .tile-icon{
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    display:block;
+  }
+
+  @media (min-width: 576px){ .tile{ grid-column: span 6; } }
+  @media (min-width: 992px){ .tile{ grid-column: span 4; } }
+
+  /* ===================== TEST SEQUENCE PAGE ===================== */
+  .seq-layout{
+    display:grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  @media (min-width: 1200px){
+    .seq-layout{
+      grid-template-columns: 1fr 380px;
+      align-items: start;
+    }
+  }
+
+  .seq-header{
+    display:flex;
+    justify-content: space-between;
+    align-items:flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+  .breadcrumbs{
+    font-size: .9rem;
+    color:#64748b;
+  }
+  .breadcrumbs strong{ color:#111827; }
+
+  /* ===================== SEQUENCE ROWS ===================== */
+  .seq-list{ padding: 14px 16px 16px 16px; }
+  .seq-row{
+    border: 2px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 14px;
+    background:#fff;
+    display:grid;
+    grid-template-columns: 1.6fr .8fr 1.2fr .55fr;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .seq-row .info h6{
+    margin:0;
+    font-weight: 900;
+    color:#111827;
+    font-size: .98rem;
+  }
+  .seq-row .info .desc{
+    margin-top: 4px;
+    color:#6b7280;
+    font-size: .86rem;
+    line-height: 1.25;
+  }
+  .seq-row .output{
+    border: 1px solid #e2e8f0;
+    background:#f8fafc;
+    border-radius: 10px;
+    min-height: 42px;
+    padding: 8px 10px;
+    font-family: ui-monospace, monospace;
+    font-size: .82rem;
+    overflow:hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .seq-row .status{
+    text-align:center;
+    font-weight: 800;
+    font-size: .8rem;
+    border-radius: 999px;
+    padding: 8px 10px;
+    border: 1px solid transparent;
+  }
+  .st-idle{ background:#f1f5f9; color:#475569; border-color:#e2e8f0; }
+  .st-running{ background:#fff7ed; color:#9a3412; border-color:#fed7aa; }
+  .st-success{ background:#ecfdf5; color:#065f46; border-color:#a7f3d0; }
+  .st-failed{ background:#fef2f2; color:#991b1b; border-color:#fecaca; }
+
+  .seq-row.running{ border-color:#f59e0b; background:#fffbeb; }
+  .seq-row.success{ border-color:#10b981; background:#ecfdf5; }
+  .seq-row.failed { border-color:#ef4444; background:#fef2f2; }
+
+  /* ===================== LSL/USL LIMIT COLOR CODING ===================== */
+  .value-within{
+    background:#ecfdf5 !important;
+    color:#065f46 !important;
+    font-weight: 900;
+    border-color:#a7f3d0 !important;
+  }
+  .value-violation{
+    background:#fee2e2 !important;
+    color:#991b1b !important;
+    font-weight: 900;
+    border-color:#fecaca !important;
+  }
+
+  /* ===================== STREAM VALUES PANEL ===================== */
+  .stream-panel{
+    background:#fff;
+    border: 2px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+  .stream-panel .header{
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .stream-panel .header h6{
+    margin:0;
+    font-weight: 900;
+    color:#111827;
+  }
+  .stream-panel .header .badge{
+    background:#3b82f6;
+    color:white;
+    padding:4px 8px;
+    border-radius: 999px;
+    font-size:.7rem;
+  }
+  .stream-value-row{
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .stream-value-row:last-child{
+    border-bottom: none;
+  }
+  .stream-value-row .label{
+    font-weight: 600;
+    color:#334155;
+  }
+  .stream-value-row .value{
+    font-family: ui-monospace, monospace;
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+  .stream-value-row .value.within{
+    color:#10b981;
+  }
+  .stream-value-row .value.violation{
+    color:#ef4444;
+  }
+  .stream-value-row .unit{
+    font-size:.8rem;
+    color:#64748b;
+    margin-left:4px;
+  }
+  .stream-timestamp{
+    font-size:.7rem;
+    color:#94a3b8;
+    text-align:right;
+    margin-top:8px;
+  }
+
+  @media (max-width: 768px){
+    .seq-row{
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+  }
+
+  /* ===================== INLINE INPUTS (IUPR SECONDARY) ===================== */
+  .inline-inputs{
+    grid-column: 1 / -1;
+    margin-top: 8px;
+    border-top: 1px dashed #e2e8f0;
+    padding-top: 10px;
+  }
+  .inline-inputs .form-text{ color:#6b7280; }
+
+  /* ===================== TOGGLE LIST ===================== */
+  .toggle-row{
+    border: 2px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 14px;
+    background:#fff;
+    display:flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  /* ===================== FLASH / STATUS COLORS ===================== */
+  .flash-start  { background:#F3E8FF; color:#6B21A8; }
+  .flash-success{ background:#ECFDF5; color:#065F46; }
+  .flash-fail   { background:#FEF2F2; color:#991B1B; }
+  .flash-request{ background:#FEF3E2; color:#B45309; }
+
+  /* ===================== PROGRESS BAR ===================== */
+  .progress-container { background: #e5e7eb; border-radius: 10px; height: 10px; overflow: hidden; }
+  .progress-bar-custom { height: 100%; transition: width 0.25s ease; border-radius: 10px; position: relative; }
+  .progress-bar-custom.animated::after {
+    content:'';
+    display:block;
+    height:100%;
+    width:100%;
+    background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.35) 50%, transparent 60%);
+    animation: shimmer 1.8s infinite linear;
+  }
+  @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+  /* ===================== INPUT VALIDATION (ENHANCED) ===================== */
+  .input-validation-error {
+    border-color: #ef4444 !important;
+    background-color: #fef2f2 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+  }
+  .input-validation-success {
+    border-color: #10b981 !important;
+    background-color: #ecfdf5 !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+  }
+
+  .field-error-message {
+    color: #ef4444;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    display: none;
+  }
+  .field-error-message.active { display: block; }
+</style>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+{% endblock %}
+
+{% block content %}
+
+{% if not model_name %}
+<!-- ====================================================================== -->
+<!-- PHASE 0 : VEHICLE SELECTION                                            -->
+<!-- ====================================================================== -->
+<div class="row justify-content-center">
+  <div class="col-11 col-xl-10">
+    <div class="rounded-box card-shadow grid-wrap">
+      <div class="grid-title">
+        <div>
+          <h5>Select Vehicle Model</h5>
+          <div class="subtle-muted">Choose a vehicle to load Diagnostics and Vehicle Health Report tests</div>
+        </div>
+      </div>
+
+      {% if vehicles %}
+      <div class="tile-grid">
+        {% for v in vehicles %}
+        <a class="tile" href="{{ url_for('tests_root', model=v.name) }}">
+          <div class="left">
+            <div class="title">{{ v.name }}</div>
+            <div class="subtitle">{% if v.category %}{{ v.category }}{% else %}—{% endif %}</div>
+          </div>
+          <div class="badges"><span class="badge-soft">Select</span></div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="alert alert-warning mb-0">No vehicle models are available for your account.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% else %}
+
+{% set _vin = current_vin|default('') %}
+{% set _auto_run_session_id = auto_run_session_id|default('') %}
+
+{# Vehicle hero visible for all pages except parameter page #}
+{% if not parameter %}
+<div class="row justify-content-center mb-3">
+  <div class="col-11 col-xl-10">
+    <div class="rounded-strip card-shadow vehicle-hero">
+      <div class="img-wrap">
+        {% if selected_vehicle and selected_vehicle.image_filename %}
+          <img src="{{ url_for('vehicle_image', filename=selected_vehicle.image_filename) }}" alt="{{ model_name }} image">
+        {% else %}
+          <div style="width:100%;height:100%;"></div>
+        {% endif %}
+      </div>
+      <div class="meta">
+        <div class="left">
+          <div class="name">{{ model_name }}</div>
+          <div class="desc">
+            {% if selected_vehicle and selected_vehicle.description %}
+              {{ selected_vehicle.description }}
+            {% else %}
+              {% if selected_vehicle and selected_vehicle.category %}
+                Category: {{ selected_vehicle.category }}
+              {% else %}
+                —
+              {% endif %}
+            {% endif %}
+            {% if selected_vehicle and selected_vehicle.vin_pattern %}
+              <div class="small text-muted mt-1">VIN Pattern: <span class="font-monospace">{{ selected_vehicle.vin_pattern }}</span></div>
+            {% endif %}
+            {% if _vin %}
+              <div class="mt-2"><span class="vin-pill">VIN: <span class="mono">{{ _vin }}</span></span></div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="right">
+          {% if selected_vehicle and selected_vehicle.category %}
+            <span class="badge-soft">{{ selected_vehicle.category }}</span>
+          {% endif %}
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('tests_root') }}">Change Vehicle</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ====================================================================== -->
+<!-- PHASE 1 : SECTION SELECTION                                            -->
+<!-- ====================================================================== -->
+{% if not section %}
+<div class="row justify-content-center">
+  <div class="col-11 col-xl-10">
+    <div class="rounded-box card-shadow grid-wrap">
+      <div class="grid-title">
+        <div>
+          <h5>Select Test Section</h5>
+          <div class="subtle-muted">Diagnostics / Vehicle Health Report</div>
+        </div>
+      </div>
+
+      {% set sections_list = sections or [] %}
+      {% if not sections_list %}
+        <div class="alert alert-warning mb-0">No sections found for this vehicle.</div>
+      {% else %}
+      <div class="tile-grid">
+        {% for s in sections_list %}
+        {% set stype = (s.section_type if s is mapping else '') %}
+        {% set slug  = (s.slug if s is mapping else '') %}
+        <a
+          class="tile js-section-tile"
+          href="{{ url_for('tests_root', model=model_name, section=slug) }}"
+          data-section-type="{{ stype }}"
+          data-section-slug="{{ slug }}"
+        >
+          <div class="left">
+            <div class="d-flex align-items-center gap-2">
+              {% if s is mapping and s.icon %}
+                {% set icon = s.icon %}
+                {% if icon.endswith('.svg') or icon.endswith('.png') or icon.endswith('.jpg') or icon.endswith('.jpeg') %}
+                  <img src="{{ url_for('static', filename=icon) }}" alt="" class="tile-icon">
+                {% else %}
+                  {% if icon.startswith("fa-") or " fa-" in icon or icon.startswith("fa ") %}
+                    <i class="{{ icon }}"></i>
+                  {% else %}
+                    <span>{{ icon }}</span>
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+              <div class="title">{{ s.name if s is mapping else slug }}</div>
+            </div>
+            <div class="subtitle">{{ s.description if s is mapping else '' }}</div>
+            {% if s is mapping and s.auto_run_programs and stype == 'diagnostics' %}
+              <div class="small text-muted mt-2">Auto programs: {{ s.auto_run_programs|length }}</div>
+            {% endif %}
+          </div>
+          <div class="badges">
+            {% if stype == 'diagnostics' %}
+              <span class="badge-soft">Diagnostics</span>
+            {% else %}
+              <span class="badge-soft">Vehicle Health</span>
+            {% endif %}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- PHASE 2 : ECU SELECTION (Diagnostics only)                             -->
+<!-- ====================================================================== -->
+{% elif section == "diagnostics" and not ecu %}
+<div class="row justify-content-center">
+  <div class="col-11 col-xl-10">
+    <div class="rounded-box card-shadow grid-wrap">
+      <div class="grid-title">
+        <div>
+          <h5>Select ECU</h5>
+          <div class="subtle-muted">{{ model_name }} · Diagnostics</div>
+        </div>
+        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('tests_root', model=model_name) }}">Back</a>
+      </div>
+
+      {% if not ecus %}
+        <div class="alert alert-warning mb-0">No ECUs found for this vehicle.</div>
+      {% else %}
+        <div class="tile-grid">
+          {% for e in ecus %}
+          {% set ecu_code = (e.ecu_code if e is mapping else e) %}
+          <a class="tile" href="{{ url_for('tests_root', model=model_name, section='diagnostics', ecu=ecu_code) }}">
+            <div class="left">
+              <div class="d-flex align-items-center gap-2">
+                {% if e is mapping and e.icon %}
+                  {% set icon = e.icon %}
+                  {% if icon.endswith('.svg') or icon.endswith('.png') or icon.endswith('.jpg') or icon.endswith('.jpeg') %}
+                    <img src="{{ url_for('static', filename=icon) }}" alt="" class="tile-icon">
+                  {% else %}
+                    {% if icon.startswith("fa-") or " fa-" in icon or icon.startswith("fa ") %}
+                      <i class="{{ icon }}"></i>
+                    {% else %}
+                      <span>{{ icon }}</span>
+                    {% endif %}
+                  {% endif %}
+                {% endif %}
+                <div class="title">{{ (e.ecu_name if e is mapping and e.ecu_name else ecu_code) }}</div>
+              </div>
+              <div class="subtitle">
+                {% if e is mapping %}
+                  {{ e.description or '' }}
+                  {% if e.protocol or e.emission %}
+                    <div class="small text-muted mt-1">
+                      {% if e.protocol %}Protocol: <strong>{{ e.protocol }}</strong>{% endif %}
+                      {% if e.emission %}<span class="ms-2">Emission: <strong>{{ e.emission }}</strong></span>{% endif %}
+                    </div>
+                  {% endif %}
+                {% else %}
+                  —
+                {% endif %}
+              </div>
+            </div>
+            <div class="badges">
+              <span class="badge-soft">ECU</span>
+              {% if e is mapping and e.protocol %}<span class="badge-soft">{{ e.protocol }}</span>{% endif %}
+              {% if e is mapping and e.emission %}<span class="badge-soft">{{ e.emission }}</span>{% endif %}
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- PHASE 3 : PARAMETER SELECTION (Diagnostics) OR HEALTH TAB SELECTION    -->
+<!-- ====================================================================== -->
+{% elif (section == "diagnostics" and ecu and not parameter) or (section == "vehicle_health" and not parameter) %}
+<div class="row justify-content-center">
+  <div class="col-11 col-xl-10">
+    <div class="rounded-box card-shadow grid-wrap">
+      <div class="grid-title">
+        <div>
+          <h5>{% if section == "diagnostics" %}Select Parameter{% else %}Select Health Tab{% endif %}</h5>
+          <div class="subtle-muted">
+            {{ model_name }}
+            {% if section == "diagnostics" %} · ECU: <strong>{{ ecu }}</strong>{% endif %}
+          </div>
+          {% if _vin %}
+            <div class="mt-2"><span class="vin-pill">VIN: <span class="mono">{{ _vin }}</span></span></div>
+          {% endif %}
+        </div>
+        {% if section == "diagnostics" %}
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('tests_root', model=model_name, section='diagnostics') }}">Back</a>
+        {% else %}
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('tests_root', model=model_name) }}">Back</a>
+        {% endif %}
+      </div>
+
+      {% if section == "diagnostics" %}
+        {% if not parameters %}
+          <div class="alert alert-warning mb-0">No parameters found for ECU <strong>{{ ecu }}</strong>.</div>
+        {% else %}
+          <div class="tile-grid">
+            {% for p in parameters %}
+              {% set pcode = (p.parameter_code if p is mapping else p) %}
+              {% set plabel = (p.label if p is mapping and p.label else pcode) %}
+              {% set exec_class = (p.execution_class if p is mapping else None) %}
+              <a class="tile" href="{{ url_for('tests_root', model=model_name, section='diagnostics', ecu=ecu, parameter=pcode) }}">
+                <div class="left">
+                  <div class="d-flex align-items-center justify-content-center gap-2">
+                    {% if p is mapping and p.icon %}
+                      {% set icon = p.icon %}
+                      {% if icon.endswith('.svg') or icon.endswith('.png') or icon.endswith('.jpg') or icon.endswith('.jpeg') %}
+                        <img src="{{ url_for('static', filename=icon) }}" alt="" class="tile-icon">
+                      {% else %}
+                        {% if icon.startswith("fa-") or " fa-" in icon or icon.startswith("fa ") %}
+                          <i class="{{ icon }}"></i>
+                        {% else %}
+                          <span>{{ icon }}</span>
+                        {% endif %}
+                      {% endif %}
+                    {% endif %}
+                    <div class="title text-center">{{ plabel }}</div>
+                  </div>
+                  <div class="subtitle text-center">{% if p is mapping and p.description %}{{ p.description }}{% else %}&nbsp;{% endif %}</div>
+                </div>
+                <div class="badges">
+                  {% if exec_class %}
+                    {% set klass = exec_class|upper %}
+                    {% if klass == 'STREAM' %}<span class="badge-soft stream">STREAM</span>{% endif %}
+                    {% if klass == 'SINGLE' %}<span class="badge-soft single">SINGLE</span>{% endif %}
+                    {% if klass == 'FLASH' %}<span class="badge-soft flash">FLASH</span>{% endif %}
+                    {% if klass == 'DUAL' %}<span class="badge-soft dual">DUAL</span>{% endif %}
+                  {% endif %}
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% else %}
+        {% if not health_tabs %}
+          <div class="alert alert-warning mb-0">No Vehicle Health tabs available.</div>
+        {% else %}
+          <div class="tile-grid">
+            {% for t in health_tabs %}
+              {% set tcode = (t.folder_code if t is mapping else t) %}
+              {% set tname = (t.folder_name if t is mapping and t.folder_name else tcode) %}
+              {% set exec_class = (t.execution_class if t is mapping else None) %}
+              <a class="tile" href="{{ url_for('tests_root', model=model_name, section='vehicle_health', parameter=tcode) }}">
+                <div class="left">
+                  <div class="d-flex align-items-center gap-2">
+                    {% if t is mapping and t.icon %}
+                      {% set icon = t.icon %}
+                      {% if icon.endswith('.svg') or icon.endswith('.png') or icon.endswith('.jpg') or icon.endswith('.jpeg') %}
+                        <img src="{{ url_for('static', filename=icon) }}" alt="" class="tile-icon">
+                      {% else %}
+                        {% if icon.startswith("fa-") or " fa-" in icon or icon.startswith("fa ") %}
+                          <i class="{{ icon }}"></i>
+                        {% else %}
+                          <span>{{ icon }}</span>
+                        {% endif %}
+                      {% endif %}
+                    {% endif %}
+                    <div class="title">{{ tname }}</div>
+                  </div>
+                  <div class="subtitle">{{ t.description if t is mapping else '' }}</div>
+                </div>
+                <div class="badges">
+                  {% if exec_class %}
+                    {% if exec_class|upper == 'STREAM' %}<span class="badge-soft stream">STREAM</span>{% endif %}
+                    {% if exec_class|upper == 'SINGLE' %}<span class="badge-soft single">SINGLE</span>{% endif %}
+                  {% endif %}
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ====================================================================== -->
+<!-- PHASE 4 : TEST SEQUENCE PAGE                                           -->
+<!-- ====================================================================== -->
+{% elif parameter %}
+<div class="row justify-content-center">
+  <div class="col-11 col-xl-12">
+
+    <div class="seq-layout">
+      <div class="rounded-box card-shadow">
+        <div class="seq-header">
+          <div>
+            <div class="breadcrumbs">
+              <strong>{{ model_name }}</strong>
+              <span class="mx-1">/</span>{{ section }}
+              {% if ecu %}<span class="mx-1">/</span>{{ ecu }}{% endif %}
+              <span class="mx-1">/</span><strong>{{ parameter }}</strong>
+            </div>
+            <div class="subtle-muted small mt-1">
+              Test Sequence Page (DB-authoritative tests; filesystem only for execution)
+            </div>
+            {% if _vin %}
+              <div class="mt-2"><span class="vin-pill">VIN: <span class="mono">{{ _vin }}</span></span></div>
+            {% endif %}
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap justify-content-end">
+            {% if section == "diagnostics" and ecu %}
+              <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('tests_root', model=model_name, section='diagnostics', ecu=ecu) }}">Back</a>
+            {% elif section == "vehicle_health" %}
+              <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('tests_root', model=model_name, section='vehicle_health') }}">Back</a>
+            {% else %}
+              <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('tests_root', model=model_name) }}">Back</a>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- FIX-25: Stream Values Panel (only show if auto-run session exists) -->
+        {% if _auto_run_session_id %}
+        <div class="stream-panel">
+          <div class="header">
+            <h6>Live Stream Values</h6>
+            <span class="badge" id="streamCount">0 signals</span>
+          </div>
+          <div id="streamValuesContainer">
+            <div class="text-muted text-center py-3">Waiting for stream data...</div>
+          </div>
+          <div class="stream-timestamp" id="streamTimestamp"></div>
+        </div>
+        {% endif %}
+
+        <div class="seq-list">
+          <div class="seq-controls mb-3">
+            <button id="btnRunAll" class="btn btn-sm btn-primary">Run All</button>
+            <button id="btnPause" class="btn btn-sm btn-outline-warning" disabled>Pause</button>
+            <button id="btnResume" class="btn btn-sm btn-outline-secondary" disabled>Resume</button>
+            <button id="btnCancelAll" class="btn btn-sm btn-outline-danger" disabled>Cancel</button>
+
+            <span id="dtcTopControls" class="ms-2"></span>
+            <span id="iuprTopControls" class="ms-2"></span>
+          </div>
+
+          <div id="testsLoadMessage" class="alert alert-info mb-3">Loading tests…</div>
+          <div id="containerSequence"></div>
+        </div>
+      </div>
+
+      <div class="rounded-box card-shadow p-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="fw-bold">Live Log Preview</div>
+          <div class="d-flex gap-2">
+            <button id="btnClearLog" class="btn btn-sm btn-outline-secondary">Clear</button>
+            <button id="btnSaveLog" class="btn btn-sm btn-outline-primary">Save</button>
+          </div>
+        </div>
+        <pre id="logArea" class="log-area" aria-live="polite"></pre>
+        <div class="small text-muted mt-2">
+          <span id="logLineCount">0 lines</span> · <span id="activeTaskCount">0 active</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endif %}
+{% endif %}
+
+<!-- ====================================================================== -->
+<!-- MODALS                                                                 -->
+<!-- ====================================================================== -->
+
+<div class="modal fade" id="autoRunModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 id="autoRunTitle" class="modal-title">Running Pre-checks</h5>
+      </div>
+      <div class="modal-body">
+        <div class="alert flash-request" id="autoRunStatus">Starting auto-run programs...</div>
+
+        <div class="progress-container mb-2">
+          <div id="autoRunProgress" class="progress-bar-custom flash-request animated" style="width:0%"></div>
+        </div>
+        <div class="small text-muted mb-3"><span id="autoRunPercent">0</span>%</div>
+
+        <div id="autoRunList" class="small"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="autoRunClose" class="btn btn-sm btn-outline-secondary" disabled>Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="vinManualModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Enter VIN</h5></div>
+      <div class="modal-body">
+        <div class="alert alert-warning">
+          VIN auto-read failed (or you chose manual VIN). Please enter VIN manually or scan QR/Barcode.
+        </div>
+
+        <label class="form-label">VIN (17 characters)</label>
+        <div class="input-group">
+          <input id="vinManualInput" class="form-control font-monospace" maxlength="17" placeholder="e.g. MA1XXXX..." autocomplete="off">
+          <button id="vinScanBtn" class="btn btn-outline-secondary" type="button">Scan</button>
+        </div>
+        <div class="form-text">VIN excludes letters I, O, Q.</div>
+
+        <div id="vinManualError" class="alert alert-danger mt-3" style="display:none;"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="vinManualSubmit" class="btn btn-sm btn-primary">Submit</button>
+        <button id="vinManualCancel" class="btn btn-sm btn-outline-secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="scanModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Scan QR / Barcode</h5></div>
+      <div class="modal-body">
+        <div id="scanStatus" class="alert flash-request">Starting scanner...</div>
+        <div class="small text-muted">
+          Point the camera at the QR/Barcode. The value will auto-fill the field.
+        </div>
+
+        <div id="readerWrap" style="display:none;">
+          <div id="reader" style="width:320px;margin:12px auto;"></div>
+        </div>
+
+        <div id="backendNoPreviewHint" class="small text-muted mt-2" style="display:none;">
+          Using station backend scanner (OpenCV). Live preview is not available in browser.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="scanCancelBtn" class="btn btn-sm btn-outline-danger">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WDI / Generic Input Modal -->
+<div class="modal fade" id="wdiInputModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 id="wdiModalTitle" class="modal-title">Inputs</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="wdiModalInfo" class="mb-3"></div>
+        <form id="wdiInputForm"><div id="wdiInputContainer"></div></form>
+        <div class="d-flex gap-2 mb-3">
+          <button id="setDefaultBtn" class="btn btn-outline-secondary btn-sm">Set Default Values</button>
+          <button id="validateInputsBtn" class="btn btn-outline-info btn-sm">Validate</button>
+        </div>
+        <div id="wdiModalStatus" class="alert" style="display:none;"></div>
+        <div id="wdiValidationErrors" class="alert alert-danger" style="display:none;"></div>
+
+        <div id="wdiLogSection" class="mt-3" style="display:none;">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="fw-bold small">Live Execution Log</div>
+            <button id="wdiClearLog" class="btn btn-sm btn-outline-secondary">Clear</button>
+          </div>
+          <pre id="wdiLogArea" class="log-area-mini"></pre>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="wdiSubmitBtn" class="btn btn-primary btn-sm">Submit</button>
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Flashing Input Modal -->
+<div class="modal fade" id="flashingInputModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 id="flashingInputTitle" class="modal-title">Flashing Parameters</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="flashingInputInfo" class="alert alert-warning">Provide required inputs. Backend enforces flashing safety rules.</div>
+        <div id="flashingInputFields"></div>
+        <div id="flashingInputErrors" class="alert alert-danger mt-2" style="display:none;"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="flashingInputSubmit" class="btn btn-primary btn-sm">Start Flashing</button>
+        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toggle Status Modal -->
+<div class="modal fade" id="toggleStatusModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 id="toggleModalTitle" class="modal-title">Status</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center">
+        <div id="toggleStatus" class="flash-request p-3 rounded mb-3">
+          <strong>Processing...</strong>
+          <div class="small mt-1">Please wait</div>
+        </div>
+
+        <div id="toggleLogSection" style="display:none;">
+          <div class="fw-bold small mb-2 text-start">Live Log</div>
+          <pre id="toggleLogArea" class="log-area-mini text-start"></pre>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Flashing Progress Modal -->
+<div class="modal fade" id="flashingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 id="flashingModalTitle" class="modal-title">ECU Flashing</h5></div>
+      <div class="modal-body text-center">
+        <div id="flashingStatus" class="flash-start p-3 rounded mb-3">
+          <strong>Flashing Started</strong>
+          <div class="small">Please do not disconnect...</div>
+        </div>
+
+        <div class="mb-3">
+          <div class="progress-container">
+            <div id="flashingProgress" class="progress-bar-custom flash-start animated" style="width:0%"></div>
+          </div>
+          <div class="small mt-1"><span id="flashingPercent">0</span>%</div>
+        </div>
+
+        <pre id="flashingLog" class="log-area" style="height:160px;"></pre>
+      </div>
+      <div class="modal-footer">
+        <button id="flashingCancel" class="btn btn-outline-danger btn-sm">Emergency Stop</button>
+        <button id="flashingClose" class="btn btn-outline-secondary btn-sm" disabled data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">Error</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body"><div id="errorMessage"></div></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+{# ====================================================================== #}
+{# SECTION PAGE SCRIPT (model selected, section not selected)              #}
+{# - FAIL-CLOSED navigation                                                #}
+{# - STREAM REAL STATUS (poll /api/auto_run/<sid>/status)                  #}
+{# - VIN popup on failure + MANUAL VIN BUTTON                              #}
+{# - Pass session_id to next page for VIN display                           #}
+{# ====================================================================== #}
+{% if model_name and not section and not parameter %}
+<script>
+(function(){
+  async function apiGetJSON(url){
+    const r = await fetch(url);
+    return await r.json();
+  }
+
+  async function apiRunAutoPrograms(section){
+    const res = await fetch("/api/run_auto_programs", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ vehicle_name: "{{ model_name }}", section })
+    });
+    return await res.json();
+  }
+
+  async function apiAutoRunStatus(sessionId){
+    const res = await fetch(`/api/auto_run/${encodeURIComponent(sessionId)}/status`);
+    return await res.json();
+  }
+
+  async function apiSubmitManualVin(session_id, program_id, vin){
+    const res = await fetch("/api/auto_run/vin", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ session_id, program_id, vin })
+    });
+    return await res.json();
+  }
+
+  // Backend scan API helpers (station OpenCV)
+  async function apiScanStart(kind="text", timeout_sec=25){
+    const res = await fetch("/api/scan/start", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ kind, timeout_sec })
+    });
+    return await res.json();
+  }
+  async function apiScanStatus(scanId){
+    return await apiGetJSON(`/api/scan/${encodeURIComponent(scanId)}/status`);
+  }
+  async function apiScanCancel(scanId){
+    await fetch(`/api/scan/${encodeURIComponent(scanId)}/cancel`, {method:"POST"});
+    return true;
+  }
+
+  // Unified scan: html5-qrcode preview first; fallback to backend scan (no preview).
+  async function scanAndFillInput(targetInputId, scanKind="text"){
+    const input = document.getElementById(targetInputId);
+    if (!input) return;
+
+    const modalEl = document.getElementById("scanModal");
+    const modal = new bootstrap.Modal(modalEl);
+    const statusEl = document.getElementById("scanStatus");
+    const cancelBtn = document.getElementById("scanCancelBtn");
+    const readerWrap = document.getElementById("readerWrap");
+    const readerDiv = document.getElementById("reader");
+    const noPreviewHint = document.getElementById("backendNoPreviewHint");
+
+    readerWrap.style.display = "none";
+    noPreviewHint.style.display = "none";
+    readerDiv.innerHTML = "";
+
+    // Browser camera preview
+    if (window.Html5Qrcode){
+      statusEl.className = "alert flash-request";
+      statusEl.textContent = "Opening camera...";
+      readerWrap.style.display = "block";
+      modal.show();
+
+      const html5QrCode = new Html5Qrcode("reader");
+      let stopRequested = false;
+
+      async function cleanup(){
+        stopRequested = true;
+        try { await html5QrCode.stop(); } catch(e){}
+        try { await html5QrCode.clear(); } catch(e){}
+        readerDiv.innerHTML = "";
+      }
+
+      cancelBtn.onclick = async () => { await cleanup(); modal.hide(); };
+
+      function onScanSuccess(decodedText){
+        if (stopRequested) return;
+        input.value = decodedText || "";
+        input.dispatchEvent(new Event("input", {bubbles:true}));
+        input.dispatchEvent(new Event("blur", {bubbles:true}));
+        cleanup().finally(() => modal.hide());
+      }
+
+      try{
+        const devices = await Html5Qrcode.getCameras();
+        if (!devices || !devices.length) throw new Error("No camera devices found");
+
+        const backCam = devices.find(d => {
+          const lbl = (d.label || "").toLowerCase();
+          return lbl.includes("back") || lbl.includes("rear") || lbl.includes("environment");
+        });
+        const cameraId = (backCam ? backCam.id : devices[0].id);
+
+        statusEl.textContent = "Point camera at QR/Barcode...";
+        await html5QrCode.start(
+          cameraId,
+          { fps: 12, qrbox: 240 },
+          onScanSuccess,
+          () => {}
+        );
+        return;
+      }catch(e){
+        console.warn("html5-qrcode failed; fallback to backend:", e);
+        try { await cleanup(); } catch(_){}
+        readerWrap.style.display = "none";
+      }
+    }
+
+    // Backend scan fallback
+    statusEl.className = "alert flash-request";
+    statusEl.textContent = "Starting station scanner (no live preview)...";
+    noPreviewHint.style.display = "block";
+    modal.show();
+
+    let start;
+    try { start = await apiScanStart(scanKind, 25); }
+    catch(e){
+      statusEl.className = "alert flash-fail";
+      statusEl.textContent = "Scan API unavailable";
+      return;
+    }
+
+    if (!start.ok){
+      statusEl.className = "alert flash-fail";
+      statusEl.textContent = start.error || "Failed to start scan";
+      return;
+    }
+
+    const scanId = start.scan_id;
+    let timer = null;
+
+    cancelBtn.onclick = async () => {
+      try { await apiScanCancel(scanId); } catch(e){}
+      if (timer) clearInterval(timer);
+      modal.hide();
+    };
+
+    timer = setInterval(async () => {
+      let st;
+      try { st = await apiScanStatus(scanId); } catch(e){ return; }
+      if (!st.ok) return;
+
+      if (st.status === "found"){
+        clearInterval(timer);
+        modal.hide();
+        input.value = st.value || "";
+        input.dispatchEvent(new Event("input", {bubbles:true}));
+        input.dispatchEvent(new Event("blur", {bubbles:true}));
+        return;
+      }
+
+      if (["timeout","cancelled","error","busy"].includes(st.status)){
+        clearInterval(timer);
+        statusEl.className = "alert flash-fail";
+        statusEl.textContent = st.error || `Scan ${st.status}`;
+      } else {
+        statusEl.className = "alert flash-request";
+        statusEl.textContent = "Scanning... (show QR/Barcode to station camera)";
+      }
+    }, 250);
+  }
+
+  function setAutoRunUI({title, statusClass, statusText, percent, itemsHtml, closable}){
+    document.getElementById('autoRunTitle').textContent = title || "Running Pre-checks";
+    const st = document.getElementById('autoRunStatus');
+    st.className = `alert ${statusClass || 'flash-request'}`;
+    st.textContent = statusText || "";
+    document.getElementById('autoRunProgress').style.width = `${percent || 0}%`;
+    document.getElementById('autoRunPercent').textContent = String(percent || 0);
+    document.getElementById('autoRunList').innerHTML = itemsHtml || "";
+    document.getElementById('autoRunClose').disabled = !closable;
+  }
+
+  function openVinModal({onSubmit, onCancel}){
+    const modalEl = document.getElementById("vinManualModal");
+    const modal = new bootstrap.Modal(modalEl);
+    const input = document.getElementById("vinManualInput");
+    const err = document.getElementById("vinManualError");
+    const btnSubmit = document.getElementById("vinManualSubmit");
+    const btnCancel = document.getElementById("vinManualCancel");
+    const btnScan = document.getElementById("vinScanBtn");
+
+    err.style.display = "none";
+    err.textContent = "";
+    input.value = "";
+
+    btnScan.onclick = () => scanAndFillInput("vinManualInput", "vin");
+
+    btnSubmit.onclick = async () => {
+      err.style.display = "none";
+      const vin = (input.value || "").trim().toUpperCase();
+
+      if (vin.length !== 17){
+        err.style.display = "block";
+        err.textContent = `VIN must be 17 characters (got ${vin.length})`;
+        return;
+      }
+      if (/[IOQ]/.test(vin)){
+        err.style.display = "block";
+        err.textContent = "VIN contains invalid characters (I, O, Q)";
+        return;
+      }
+
+      btnSubmit.disabled = true;
+      try{
+        await onSubmit(vin);
+        modal.hide();
+      }catch(e){
+        err.style.display = "block";
+        err.textContent = e?.message || "Failed to submit VIN";
+      }finally{
+        btnSubmit.disabled = false;
+      }
+    };
+
+    btnCancel.onclick = () => {
+      modal.hide();
+      if (onCancel) onCancel();
+    };
+
+    modal.show();
+  }
+
+  function isStreamProgram(p){
+    return String(p.program_type || "").toLowerCase() === "stream";
+  }
+
+  function deriveProgramUiStatus(p, liveTaskStatus){
+    const taskStatus = (liveTaskStatus?.status || "NOT_FOUND");
+
+    if (["PENDING","RUNNING"].includes(taskStatus)){
+      return isStreamProgram(p) ? "STREAMING" : "RUNNING";
+    }
+    if (taskStatus === "PAUSED"){
+      return isStreamProgram(p) ? "STREAMING" : "PAUSED";
+    }
+    if (["COMPLETED","CANCELLED","TIMEOUT","ERROR"].includes(taskStatus)){
+      return taskStatus;
+    }
+    return (p.task_id ? "NOT_FOUND" : "NOT_STARTED");
+  }
+
+  function renderBadge(uiStatus, passed){
+    if (uiStatus === "STREAMING") return `<span class="badge bg-info text-dark">STREAMING</span>`;
+    if (uiStatus === "RUNNING")   return `<span class="badge bg-warning text-dark">RUNNING</span>`;
+    if (uiStatus === "PAUSED")    return `<span class="badge bg-secondary">PAUSED</span>`;
+    if (uiStatus === "NOT_STARTED") return `<span class="badge bg-light text-dark">NOT STARTED</span>`;
+    if (uiStatus === "NOT_FOUND") return `<span class="badge bg-secondary">TASK LOST</span>`;
+    if (uiStatus === "ERROR" || uiStatus === "TIMEOUT") return `<span class="badge bg-danger">FAIL</span>`;
+    if (uiStatus === "CANCELLED") return `<span class="badge bg-secondary">CANCELLED</span>`;
+    if (uiStatus === "COMPLETED") {
+      return passed ? `<span class="badge bg-success">PASS</span>` : `<span class="badge bg-danger">FAIL</span>`;
+    }
+    return `<span class="badge bg-light text-dark">${uiStatus}</span>`;
+  }
+
+  async function runDiagnosticsPrechecksThenNavigate(href){
+    const modalEl = document.getElementById('autoRunModal');
+    const modal = new bootstrap.Modal(modalEl);
+
+    setAutoRunUI({
+      title: "Diagnostics – Pre-checks",
+      statusClass: "flash-request",
+      statusText: "Starting pre-check programs...",
+      percent: 0,
+      itemsHtml: "",
+      closable: false
+    });
+    modal.show();
+
+    // Start auto-run session
+    let start;
+    try{
+      start = await apiRunAutoPrograms("diagnostics");
+    }catch(e){
+      setAutoRunUI({
+        title: "Diagnostics – Pre-checks Failed",
+        statusClass: "flash-fail",
+        statusText: "Auto-run API failed. Cannot enter Diagnostics.",
+        percent: 0,
+        itemsHtml: "",
+        closable: true
+      });
+      document.getElementById('autoRunClose').onclick = () => modal.hide();
+      return;
+    }
+
+    if (!start || start.ok !== true){
+      setAutoRunUI({
+        title: "Diagnostics – Pre-checks Failed",
+        statusClass: "flash-fail",
+        statusText: start?.error || "Auto-run failed",
+        percent: 0,
+        itemsHtml: "",
+        closable: true
+      });
+      document.getElementById('autoRunClose').onclick = () => modal.hide();
+      return;
+    }
+
+    const sessionId = start.session_id || null;
+    const programs = Array.isArray(start.programs) ? start.programs : [];
+
+    if (!sessionId){
+      setAutoRunUI({
+        title: "Diagnostics – Pre-checks Failed",
+        statusClass: "flash-fail",
+        statusText: "No session_id returned by server.",
+        percent: 0,
+        itemsHtml: "",
+        closable: true
+      });
+      document.getElementById('autoRunClose').onclick = () => modal.hide();
+      return;
+    }
+
+    // No programs configured => allow navigation
+    if (!programs.length){
+      modal.hide();
+      window.location.href = href;
+      return;
+    }
+
+    const state = programs.map(p => ({
+      program_id: p.program_id,
+      program_name: p.program_name || p.program_id,
+      program_type: p.program_type || "single",
+      required: (p.required ?? p.is_required ?? true) === true,
+      fallback_action: String(p.fallback_action || "none"),
+      fallback_input: p.fallback_input || null,
+      log_as_vin: p.log_as_vin === true,
+      task_id: null,
+      ui_status: "NOT_STARTED",
+      passed: null,
+      exception: null,
+      result_value: null
+    }));
+
+    const vinPrompted = new Set();
+    let vinModalOpen = false;
+
+    function renderList(){
+      return `
+        <div class="mt-2">
+          ${state.map(p => {
+            const req = p.required
+              ? `<span class="badge bg-secondary ms-1">Required</span>`
+              : `<span class="badge bg-light text-dark ms-1">Optional</span>`;
+
+            const badge = renderBadge(p.ui_status, p.passed === true);
+
+            const err = (p.exception && p.passed === false)
+              ? `<div class="text-danger small mt-1">${p.exception}</div>`
+              : ``;
+
+            const rv = (p.result_value && p.passed)
+              ? `<div class="small text-muted mt-1">Value: <span class="font-monospace">${p.result_value}</span></div>`
+              : ``;
+
+            const isVin = (p.log_as_vin === true && p.fallback_action.toLowerCase() === "manual_input");
+            const manualBtn = isVin
+              ? `<button type="button"
+                         class="btn btn-sm btn-outline-primary js-manual-vin-btn mt-2"
+                         data-program-id="${p.program_id}">
+                    Manual VIN
+                 </button>`
+              : ``;
+
+            return `
+              <div class="border rounded p-2 mb-2">
+                <div class="d-flex justify-content-between align-items-center gap-2">
+                  <div><strong>${p.program_name}</strong> <span class="text-muted">(${p.program_id})</span></div>
+                  <div>${badge}${req}</div>
+                </div>
+                ${rv}
+                ${err}
+                ${manualBtn}
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
+    }
+
+    // Manual VIN button handler (always available for VIN program)
+    document.getElementById("autoRunList").onclick = (ev) => {
+      const btn = ev.target.closest(".js-manual-vin-btn");
+      if (!btn) return;
+
+      const pid = btn.dataset.programId;
+      const prog = state.find(x => x.program_id === pid);
+      if (!prog) return;
+
+      if (vinModalOpen) return;
+      vinModalOpen = true;
+
+      openVinModal({
+        onSubmit: async (vin) => {
+          const resp = await apiSubmitManualVin(sessionId, pid, vin);
+          if (!resp.ok) throw new Error(resp.error || "VIN_SUBMIT_FAILED");
+          prog.passed = true;
+          prog.result_value = vin;
+          prog.exception = null;
+          try { localStorage.setItem(`nirix_last_vin_${"{{ model_name }}".toLowerCase()}`, vin); } catch(e){}
+        },
+        onCancel: () => {}
+      });
+
+      // mark closed when modal closes (best-effort)
+      setTimeout(() => { vinModalOpen = false; }, 700);
+    };
+
+    // Poll session status for real task state
+    const timer = setInterval(async () => {
+      let st;
+      try{
+        st = await apiAutoRunStatus(sessionId);
+      }catch(e){
+        clearInterval(timer);
+        setAutoRunUI({
+          title: "Diagnostics – Pre-checks Failed",
+          statusClass: "flash-fail",
+          statusText: "Failed to fetch auto-run status.",
+          percent: 0,
+          itemsHtml: renderList(),
+          closable: true
+        });
+        document.getElementById('autoRunClose').onclick = () => modal.hide();
+        return;
+      }
+
+      if (!st || st.ok !== true){
+        clearInterval(timer);
+        setAutoRunUI({
+          title: "Diagnostics – Pre-checks Failed",
+          statusClass: "flash-fail",
+          statusText: st?.error || "Auto-run status failed",
+          percent: 0,
+          itemsHtml: renderList(),
+          closable: true
+        });
+        document.getElementById('autoRunClose').onclick = () => modal.hide();
+        return;
+      }
+
+      const results = st.results || {};
+      const taskIds = st.task_ids || {};
+      const live = st.live_task_statuses || {};
+
+      // Update state
+      for (const p of state){
+        p.task_id = taskIds[p.program_id] || p.task_id;
+        const liveTask = live[p.program_id] || null;
+        p.ui_status = deriveProgramUiStatus(p, liveTask);
+
+        const pr = results[p.program_id] || null;
+        if (pr){
+          p.passed = !!pr.passed;
+          p.exception = pr.error_message || null;
+          p.result_value = pr.result_value || null;
+        } else {
+          // If no result yet:
+          if (isStreamProgram(p) && p.ui_status === "STREAMING"){
+            p.passed = true; // stream started OK
+          } else if (p.ui_status === "NOT_STARTED" || p.ui_status === "RUNNING") {
+            p.passed = null;
+          }
+        }
+      }
+
+      // Percent: count SINGLE programs (not streams)
+      const singles = state.filter(p => !isStreamProgram(p));
+      const doneSingles = singles.filter(p => ["COMPLETED","ERROR","TIMEOUT","CANCELLED"].includes(p.ui_status)).length;
+      const percent = Math.round((doneSingles / Math.max(1, singles.length)) * 100);
+
+      setAutoRunUI({
+        title: "Diagnostics – Pre-checks",
+        statusClass: "flash-request",
+        statusText: "Running pre-check programs...",
+        percent,
+        itemsHtml: renderList(),
+        closable: false
+      });
+
+      // Auto-open VIN modal if needed
+      if (st.vin_input_needed === true){
+        const vinProg = state.find(p => p.log_as_vin && p.fallback_action.toLowerCase() === "manual_input");
+        if (vinProg && !vinPrompted.has(vinProg.program_id) && !vinModalOpen){
+          vinPrompted.add(vinProg.program_id);
+          vinModalOpen = true;
+
+          openVinModal({
+            onSubmit: async (vin) => {
+              const resp = await apiSubmitManualVin(sessionId, vinProg.program_id, vin);
+              if (!resp.ok) throw new Error(resp.error || "VIN_SUBMIT_FAILED");
+              vinProg.passed = true;
+              vinProg.result_value = vin;
+              vinProg.exception = null;
+              try { localStorage.setItem(`nirix_last_vin_${"{{ model_name }}".toLowerCase()}`, vin); } catch(e){}
+            },
+            onCancel: () => {}
+          });
+
+          setTimeout(() => { vinModalOpen = false; }, 700);
+          return;
+        }
+      }
+
+      // Blocking / completion decisions are server-authoritative
+      if (Array.isArray(st.blocking_programs) && st.blocking_programs.length){
+        clearInterval(timer);
+        setAutoRunUI({
+          title: "Diagnostics – Pre-checks Failed",
+          statusClass: "flash-fail",
+          statusText: `Blocked by: ${st.blocking_programs.join(", ")}`,
+          percent,
+          itemsHtml: renderList(),
+          closable: true
+        });
+        document.getElementById('autoRunClose').onclick = () => modal.hide();
+        return;
+      }
+
+      if (st.all_required_passed === true){
+        clearInterval(timer);
+        setAutoRunUI({
+          title: "Diagnostics – Pre-checks Passed",
+          statusClass: "flash-success",
+          statusText: "All required pre-checks passed. Entering Diagnostics...",
+          percent: 100,
+          itemsHtml: renderList(),
+          closable: false
+        });
+
+        const nextUrl = new URL(href, window.location.origin);
+        nextUrl.searchParams.set("auto_run_session_id", sessionId);
+
+        setTimeout(() => {
+          modal.hide();
+          window.location.href = nextUrl.toString();
+        }, 700);
+      }
+
+    }, 700);
+
+    // close button (only enabled on fail states)
+    document.getElementById('autoRunClose').onclick = () => modal.hide();
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".js-section-tile").forEach(a => {
+      const stype = (a.dataset.sectionType || "").toLowerCase();
+      if (stype !== "diagnostics") return;
+
+      a.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        runDiagnosticsPrechecksThenNavigate(a.href);
+      });
+    });
+  });
+})();
+</script>
+{% endif %}
+
+{# ====================================================================== #}
+{# TEST SEQUENCE PAGE SCRIPT (parameter selected)                          #}
+{# Full support for: LIVE, stream, WDI, IO toggle, routine, DTC, Flashing, IUPR #}
+{# Includes scan preview + backend fallback                                #}
+{# FIX-25: Added stream values polling and display                         #}
+{# FIX-26: Enhanced auto-run session handling with VIN display             #}
+{# ====================================================================== #}
+{% if model_name and parameter %}
+<script>
+const SERVER_TESTS_RAW = {{ (tests or []) | tojson }};
+const AUTO_RUN_SESSION_ID = "{{ auto_run_session_id|default('') }}";
+
+const MODEL_NAME = "{{ model_name }}";
+const SECTION = "{{ section }}";
+const ECU = "{{ ecu or '' }}";
+const PARAMETER_RAW = "{{ parameter }}";
+
+let TESTS = [];
+let PAGE_TYPE = null;
+
+let activeTaskIds = new Set();
+let perTaskLogTimers = new Map();
+let logLineCount = 0;
+let globalPaused = false;
+let userCancelledTaskIds = new Set();
+
+const LOG_MAX_CHARS = 2_000_000;
+
+// FIX-25: Stream values polling
+let streamPollInterval = null;
+let lastStreamUpdate = null;
+
+/* ===================== UI helpers ===================== */
+function setLoadMessage(type, text){
+  const box = document.getElementById("testsLoadMessage");
+  if (!box) return;
+  box.className = `alert alert-${type} mb-3`;
+  box.textContent = text;
+  box.style.display = "block";
+}
+function hideLoadMessage(){
+  const box = document.getElementById("testsLoadMessage");
+  if (!box) return;
+  box.style.display = "none";
+}
+function updateLogStats(){
+  const lc = document.getElementById("logLineCount");
+  const tc = document.getElementById("activeTaskCount");
+  if (lc) lc.textContent = `${logLineCount} lines`;
+  if (tc) tc.textContent = `${activeTaskIds.size} active`;
+}
+function appendLogLine(line, targetAreaId = "logArea"){
+  if (!line) return;
+  const area = document.getElementById(targetAreaId);
+  if (!area) return;
+  area.textContent += line + "\n";
+  if (targetAreaId === "logArea") {
+    if (area.textContent.length > LOG_MAX_CHARS) {
+      area.textContent = area.textContent.slice(-LOG_MAX_CHARS);
+    }
+    logLineCount++;
+    updateLogStats();
+  }
+  area.scrollTop = area.scrollHeight;
+}
+function showError(message){
+  document.getElementById("errorMessage").textContent = message;
+  new bootstrap.Modal(document.getElementById("errorModal")).show();
+}
+
+/* ===================== Normalize helpers ===================== */
+function normKey(s){
+  return String(s || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+function candidateCodes(raw){
+  const s = String(raw || "").trim();
+  const noSpace = s.replace(/\s+/g, "_");
+  const upper = noSpace.toUpperCase();
+  const lower = noSpace.toLowerCase();
+  return Array.from(new Set([s, noSpace, upper, lower]));
+}
+
+/* ===================== API ===================== */
+async function apiGetJSON(url){
+  const r = await fetch(url);
+  return await r.json();
+}
+async function apiFetchTests(vehicle, section, ecu, parameter){
+  const qs = new URLSearchParams();
+  qs.set("vehicle_name", vehicle);
+  qs.set("section", section);
+  qs.set("parameter", parameter);
+  if (section === "diagnostics" && ecu) qs.set("ecu", ecu);
+  const data = await apiGetJSON(`/api/tests?${qs.toString()}`);
+  return Array.isArray(data.tests) ? data.tests : [];
+}
+async function apiRunTest(testId, user_inputs = {}){
+  const payload = { vehicle_name: MODEL_NAME, test_id: String(testId), user_inputs: user_inputs || {} };
+  const res = await fetch("/api/run_test", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(payload) });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || "RUN_FAILED");
+  return data.task_id;
+}
+async function apiTaskStatus(taskId){ return await apiGetJSON(`/api/task/${taskId}/status`); }
+async function apiTaskLogs(taskId){
+  const d = await apiGetJSON(`/api/task/${taskId}/logs`);
+  return d.log_text || "";
+}
+async function apiCancel(taskId){ await fetch(`/api/task/${taskId}/cancel`, {method:"POST"}); return true; }
+async function apiPause(taskId){ await fetch(`/api/task/${taskId}/pause`, {method:"POST"}); return true; }
+async function apiResume(taskId){ await fetch(`/api/task/${taskId}/resume`, {method:"POST"}); return true; }
+
+// FIX-25: Stream values API
+async function apiGetStreamValues(sessionId){
+  return await apiGetJSON(`/api/auto_run/${encodeURIComponent(sessionId)}/stream_values`);
+}
+
+/* ===================== Backend Scan API (station OpenCV) ===================== */
+async function apiScanStart(kind="text", timeout_sec=25){
+  const res = await fetch("/api/scan/start", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ kind, timeout_sec }) });
+  return await res.json();
+}
+async function apiScanStatus(scanId){ return await apiGetJSON(`/api/scan/${encodeURIComponent(scanId)}/status`); }
+async function apiScanCancel(scanId){ await fetch(`/api/scan/${encodeURIComponent(scanId)}/cancel`, {method:"POST"}); return true; }
+
+/* ===================== Unified Scan function (preview first) ===================== */
+async function scanAndFillInput(targetInputId, scanKind="text"){
+  const input = document.getElementById(targetInputId);
+  if (!input) return;
+
+  const modalEl = document.getElementById("scanModal");
+  const modal = new bootstrap.Modal(modalEl);
+  const statusEl = document.getElementById("scanStatus");
+  const cancelBtn = document.getElementById("scanCancelBtn");
+  const readerWrap = document.getElementById("readerWrap");
+  const readerDiv = document.getElementById("reader");
+  const noPreviewHint = document.getElementById("backendNoPreviewHint");
+
+  readerWrap.style.display = "none";
+  noPreviewHint.style.display = "none";
+  readerDiv.innerHTML = "";
+
+  // Browser camera preview first
+  if (window.Html5Qrcode){
+    statusEl.className = "alert flash-request";
+    statusEl.textContent = "Opening camera...";
+    readerWrap.style.display = "block";
+    modal.show();
+
+    const html5QrCode = new Html5Qrcode("reader");
+    let stopRequested = false;
+
+    async function cleanup(){
+      stopRequested = true;
+      try { await html5QrCode.stop(); } catch(e){}
+      try { await html5QrCode.clear(); } catch(e){}
+      readerDiv.innerHTML = "";
+    }
+
+    cancelBtn.onclick = async () => { await cleanup(); modal.hide(); };
+
+    function onScanSuccess(decodedText){
+      if (stopRequested) return;
+      input.value = decodedText || "";
+      input.dispatchEvent(new Event("input", {bubbles:true}));
+      input.dispatchEvent(new Event("blur", {bubbles:true}));
+      cleanup().finally(() => modal.hide());
+    }
+
+    try {
+      const devices = await Html5Qrcode.getCameras();
+      if (!devices || !devices.length) throw new Error("No camera devices found");
+
+      const backCam = devices.find(d => {
+        const lbl = (d.label || "").toLowerCase();
+        return lbl.includes("back") || lbl.includes("rear") || lbl.includes("environment");
+      });
+      const cameraId = (backCam ? backCam.id : devices[0].id);
+
+      statusEl.textContent = "Point camera at QR/Barcode...";
+      await html5QrCode.start(cameraId, { fps: 12, qrbox: 240 }, onScanSuccess, () => {});
+      return;
+    } catch (e) {
+      console.warn("html5-qrcode failed; falling back to backend:", e);
+      try { await cleanup(); } catch(_){}
+      readerWrap.style.display = "none";
+    }
+  }
+
+  // Backend scan fallback (no preview)
+  statusEl.className = "alert flash-request";
+  statusEl.textContent = "Starting station scanner (no live preview)...";
+  noPreviewHint.style.display = "block";
+  modal.show();
+
+  let start;
+  try { start = await apiScanStart(scanKind, 25); }
+  catch(e){
+    statusEl.className = "alert flash-fail";
+    statusEl.textContent = "Scan API unavailable";
+    return;
+  }
+
+  if (!start.ok){
+    statusEl.className = "alert flash-fail";
+    statusEl.textContent = start.error || "Failed to start scan";
+    return;
+  }
+
+  const scanId = start.scan_id;
+  let timer = null;
+
+  cancelBtn.onclick = async () => {
+    try { await apiScanCancel(scanId); } catch(e){}
+    if (timer) clearInterval(timer);
+    modal.hide();
+  };
+
+  timer = setInterval(async () => {
+    let st;
+    try { st = await apiScanStatus(scanId); } catch(e){ return; }
+    if (!st.ok) return;
+
+    if (st.status === "found"){
+      clearInterval(timer);
+      modal.hide();
+      input.value = st.value || "";
+      input.dispatchEvent(new Event("input", {bubbles:true}));
+      input.dispatchEvent(new Event("blur", {bubbles:true}));
+      return;
+    }
+
+    if (["timeout","cancelled","error","busy"].includes(st.status)){
+      clearInterval(timer);
+      statusEl.className = "alert flash-fail";
+      statusEl.textContent = st.error || `Scan ${st.status}`;
+    } else {
+      statusEl.className = "alert flash-request";
+      statusEl.textContent = "Scanning... (show QR/Barcode to station camera)";
+    }
+  }, 250);
+}
+
+/* ===================== Normalize test object ===================== */
+function normalizeTest(t){
+  const exec = String(t.execution_mode || "single").toLowerCase();
+  const supportsDefault = (exec === "stream" || exec === "live") ? false : true;
+  return {
+    id: String(t.id),
+    label: t.label || t.id,
+    description: t.description || "",
+    button_name: t.button_name || "Run",
+    parameter_page_type: t.parameter_page_type || null,
+    execution_mode: exec,
+    supports_run_all: (t.supports_run_all ?? supportsDefault) === true,
+    timeout_sec: Number(t.timeout_sec || 15),
+    inputs: Array.isArray(t.inputs) ? t.inputs : [],
+    output_limits: Array.isArray(t.output_limits) ? t.output_limits : [],
+    function_role: t.function_role || null
+  };
+}
+
+/* ===================== Input normalization + validators ===================== */
+function normalizeInputType(rawType, inputSpec) {
+  const t = String(rawType || "").trim().toLowerCase();
+  if (Array.isArray(inputSpec?.enum || inputSpec?.enum_values)) return "select";
+  switch (t) {
+    case "integer":
+    case "int": return "int";
+    case "number":
+    case "float":
+    case "double":
+    case "decimal": return "float";
+    case "bool":
+    case "boolean": return "bool";
+    case "text":
+    case "string": return "string";
+    case "hex":
+    case "hexstring":
+    case "hex_string": return "hex";
+    case "datetime":
+    case "date":
+    case "timestamp": return "datetime";
+    default:
+      if ((inputSpec?.hint || "").toLowerCase().includes("hex")) return "hex";
+      return "string";
+  }
+}
+
+function normInput(i){
+  const base = {
+    name: i.name,
+    label: i.label ?? i.name,
+    length: i.length ?? null,
+    min: (i.min ?? i.min_value ?? null),
+    max: (i.max ?? i.max_value ?? null),
+    enum: (i.enum ?? i.enum_values ?? null),
+    default: (i.default ?? i.default_value ?? null),
+    hint: (i.hint ?? i.format_hint ?? ""),
+    required: (i.required ?? i.is_required ?? false) === true
+  };
+  const canonicalType = normalizeInputType(i.type ?? i.input_type, i);
+  base.type = (Array.isArray(base.enum) && base.enum.length > 0 && canonicalType !== "select") ? "select" : canonicalType;
+  return base;
+}
+
+const INPUT_VALIDATORS = {
+  "int": (value, spec) => {
+    if (value === null || value === "") return null;
+    const n = parseInt(value, 10);
+    if (!Number.isFinite(n)) return `Must be a valid integer`;
+    if (spec.min != null && n < spec.min) return `Must be >= ${spec.min}`;
+    if (spec.max != null && n > spec.max) return `Must be <= ${spec.max}`;
+    return null;
+  },
+  "float": (value, spec) => {
+    if (value === null || value === "") return null;
+    const n = parseFloat(value);
+    if (!Number.isFinite(n)) return `Must be a valid number`;
+    if (spec.min != null && n < spec.min) return `Must be >= ${spec.min}`;
+    if (spec.max != null && n > spec.max) return `Must be <= ${spec.max}`;
+    return null;
+  },
+  "string": (value, spec) => {
+    if (value === null || value === "") return null;
+    const s = String(value);
+    if (spec.length && s.length !== spec.length) return `Must be exactly ${spec.length} characters (got ${s.length})`;
+    return null;
+  },
+  "hex": (value, spec) => {
+    if (value === null || value === "") return null;
+    const s = String(value).toUpperCase().replace(/^0X/, "");
+    if (!/^[0-9A-F]+$/.test(s)) return `Must contain only hex characters (0-9, A-F)`;
+    if (spec.length && s.length !== spec.length) return `Must be exactly ${spec.length} hex characters (got ${s.length})`;
+    return null;
+  },
+  "bool": (value, spec) => null,
+  "datetime": (value, spec) => null,
+  "select": (value, spec) => {
+    if (!value && spec.required) return `Selection required`;
+    if (value && spec.enum && !spec.enum.includes(value)) return `Must be one of: ${spec.enum.join(", ")}`;
+    return null;
+  }
+};
+
+const INPUT_TYPE_HANDLERS = {
+  "int": {
+    render: (i, idPrefix="") =>
+      `<input class="form-control" type="number" id="${idPrefix}input_${i.name}" step="1"
+              value="${i.default ?? ""}"
+              ${i.min!=null?`min="${i.min}"`:``}
+              ${i.max!=null?`max="${i.max}"`:``}
+              data-input-name="${i.name}">
+       <div class="field-error-message" id="${idPrefix}error_${i.name}"></div>`,
+    get: (i, idPrefix="") => {
+      const v = document.getElementById(`${idPrefix}input_${i.name}`)?.value;
+      if (v === "" || v == null) return (i.default ?? null);
+      const n = parseInt(v, 10);
+      return Number.isFinite(n) ? n : (i.default ?? null);
+    }
+  },
+  "float": {
+    render: (i, idPrefix="") =>
+      `<input class="form-control" type="number" id="${idPrefix}input_${i.name}" step="any"
+              value="${i.default ?? ""}"
+              ${i.min!=null?`min="${i.min}"`:``}
+              ${i.max!=null?`max="${i.max}"`:``}
+              data-input-name="${i.name}">
+       <div class="field-error-message" id="${idPrefix}error_${i.name}"></div>`,
+    get: (i, idPrefix="") => {
+      const v = document.getElementById(`${idPrefix}input_${i.name}`)?.value;
+      if (v === "" || v == null) return (i.default ?? null);
+      const n = parseFloat(v);
+      return Number.isFinite(n) ? n : (i.default ?? null);
+    }
+  },
+  "string": {
+    render: (i, idPrefix="") => {
+      const isPassword = (String(i.hint || "").toLowerCase() === "password");
+      const targetId = `${idPrefix}input_${i.name}`;
+      return `
+        <div class="input-group">
+          <input class="form-control" type="${isPassword ? "password" : "text"}"
+                 id="${targetId}" value="${i.default ?? ""}"
+                 ${i.length?`maxlength="${i.length}"`:``}
+                 placeholder="${i.hint || ""}" data-input-name="${i.name}">
+          <button class="btn btn-outline-secondary js-scan-btn" type="button"
+                  data-target="${targetId}" data-scan-kind="text">Scan</button>
+        </div>
+        <div class="field-error-message" id="${idPrefix}error_${i.name}"></div>`;
+    },
+    get: (i, idPrefix="") => {
+      const el = document.getElementById(`${idPrefix}input_${i.name}`);
+      if (!el) return (i.default ?? null);
+      const v = (el.value ?? "").trim();
+      if (!v) return (i.default ?? null);
+      return v;
+    }
+  },
+  "hex": {
+    render: (i, idPrefix="") => {
+      const targetId = `${idPrefix}input_${i.name}`;
+      return `
+        <div class="input-group">
+          <input class="form-control font-monospace" style="text-transform:uppercase"
+                 type="text" id="${targetId}" value="${i.default ?? ""}"
+                 ${i.length?`maxlength="${i.length}"`:``}
+                 placeholder="${i.hint || "HEX"}" data-input-name="${i.name}">
+          <button class="btn btn-outline-secondary js-scan-btn" type="button"
+                  data-target="${targetId}" data-scan-kind="hex">Scan</button>
+        </div>
+        <div class="field-error-message" id="${idPrefix}error_${i.name}"></div>`;
+    },
+    get: (i, idPrefix="") => {
+      const v = (document.getElementById(`${idPrefix}input_${i.name}`)?.value ?? "").trim().toUpperCase();
+      if (!v) return (i.default ?? null);
+      return v;
+    }
+  },
+  "bool": {
+    render: (i, idPrefix="") => `
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="${idPrefix}input_${i.name}" ${i.default ? "checked":""} data-input-name="${i.name}">
+        <label class="form-check-label" for="${idPrefix}input_${i.name}">${i.label || i.name}</label>
+      </div>`,
+    get: (i, idPrefix="") => !!document.getElementById(`${idPrefix}input_${i.name}`)?.checked
+  },
+  "datetime": {
+    render: (i, idPrefix="") => {
+      const targetId = `${idPrefix}input_${i.name}`;
+      return `
+        <div class="input-group">
+          <input class="form-control font-monospace" type="text"
+                 id="${targetId}" value="${i.default ?? ""}"
+                 placeholder="${i.hint || "DDMMYYYY"}" data-input-name="${i.name}">
+          <button class="btn btn-outline-secondary js-scan-btn" type="button"
+                  data-target="${targetId}" data-scan-kind="text">Scan</button>
+        </div>
+        <div class="field-error-message" id="${idPrefix}error_${i.name}"></div>`;
+    },
+    get: (i, idPrefix="") => {
+      const v = (document.getElementById(`${idPrefix}input_${i.name}`)?.value ?? "").trim();
+      if (!v) return (i.default ?? null);
+      return v;
+    }
+  },
+  "select": {
+    render: (i, idPrefix="") => {
+      const options = (i.enum || []).map(opt => {
+        const val = (typeof opt === "object" && opt !== null) ? (opt.value ?? opt.key ?? String(opt)) : String(opt);
+        const lbl = (typeof opt === "object" && opt !== null) ? (opt.label ?? val) : String(opt);
+        const sel = (i.default != null && String(i.default) === String(val)) ? 'selected' : '';
+        return `<option value="${String(val)}" ${sel}>${lbl}</option>`;
+      }).join("");
+      return `
+        <select class="form-select" id="${idPrefix}input_${i.name}" data-input-name="${i.name}">
+          ${i.required ? '' : '<option value="">-- Select --</option>'}
+          ${options}
+        </select>
+        <div class="field-error-message" id="${idPrefix}error_${i.name}"></div>`;
+    },
+    get: (i, idPrefix="") => {
+      const el = document.getElementById(`${idPrefix}input_${i.name}`);
+      if (!el) return (i.default ?? null);
+      const v = el.value;
+      if (v === "" || v == null) return (i.default ?? null);
+      return v;
+    }
+  }
+};
+
+function bindScanButtons(root=document){
+  root.querySelectorAll(".js-scan-btn").forEach(btn => {
+    if (btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", async () => {
+      const target = btn.dataset.target;
+      const kind = btn.dataset.scanKind || "text";
+      await scanAndFillInput(target, kind);
+    });
+  });
+}
+
+function attachRealTimeValidation(inputs, idPrefix = ""){
+  for (const raw of (inputs || [])){
+    const i = normInput(raw);
+    const el = document.getElementById(`${idPrefix}input_${i.name}`);
+    if (!el) continue;
+
+    el.addEventListener("blur", () => validateSingleInput(i, idPrefix));
+    el.addEventListener("input", () => clearInputError(i.name, idPrefix));
+  }
+}
+
+function validateSingleInput(i, idPrefix = ""){
+  const el = document.getElementById(`${idPrefix}input_${i.name}`);
+  if (!el) return true;
+
+  const value = (i.type === "bool") ? el.checked : el.value;
+
+  if (i.required && (value === "" || value === null || value === undefined)){
+    setInputError(i.name, `${i.label || i.name} is required`, idPrefix);
+    return false;
+  }
+
+  const validator = INPUT_VALIDATORS[i.type];
+  if (validator){
+    const error = validator(value, i);
+    if (error){
+      setInputError(i.name, error, idPrefix);
+      return false;
+    }
+  }
+
+  clearInputError(i.name, idPrefix);
+  return true;
+}
+
+function setInputError(name, message, idPrefix = ""){
+  const el = document.getElementById(`${idPrefix}input_${name}`);
+  const errEl = document.getElementById(`${idPrefix}error_${name}`);
+  if (el) el.classList.add("input-validation-error");
+  if (errEl) { errEl.textContent = message; errEl.classList.add("active"); }
+}
+
+function clearInputError(name, idPrefix = ""){
+  const el = document.getElementById(`${idPrefix}input_${name}`);
+  const errEl = document.getElementById(`${idPrefix}error_${name}`);
+  if (el) el.classList.remove("input-validation-error");
+  if (errEl) { errEl.textContent = ""; errEl.classList.remove("active"); }
+}
+
+function setInputSuccess(name, idPrefix = ""){
+  const el = document.getElementById(`${idPrefix}input_${name}`);
+  if (el) el.classList.add("input-validation-success");
+}
+
+function validateAllInputs(inputs, idPrefix = ""){
+  let allValid = true;
+  const errors = [];
+
+  for (const raw of (inputs || [])){
+    const i = normInput(raw);
+    if (!validateSingleInput(i, idPrefix)){
+      allValid = false;
+      errors.push(i.label || i.name);
+    } else {
+      setInputSuccess(i.name, idPrefix);
+    }
+  }
+
+  return { valid: allValid, errors };
+}
+
+function collectInputs(inputs, idPrefix=""){
+  const out = {};
+  for (const raw of (inputs || [])){
+    const i = normInput(raw);
+    const handler = INPUT_TYPE_HANDLERS[i.type];
+    if (!handler) continue;
+    out[i.name] = handler.get(i, idPrefix);
+  }
+  return out;
+}
+
+/* ===================== Resolve parameter code ===================== */
+async function resolveParameterCode(){
+  if (SECTION === "diagnostics" && ECU){
+    const data = await apiGetJSON(`/api/parameters/${encodeURIComponent(MODEL_NAME)}/${encodeURIComponent(ECU)}`);
+    const params = Array.isArray(data.parameters) ? data.parameters : [];
+    const rawKey = normKey(PARAMETER_RAW);
+
+    for (const p of params){
+      if (normKey(p.parameter_code) === rawKey) return p.parameter_code;
+      if (normKey(p.label) === rawKey) return p.parameter_code;
+    }
+
+    const cands = candidateCodes(PARAMETER_RAW).map(normKey);
+    for (const p of params){
+      if (cands.includes(normKey(p.parameter_code)) || cands.includes(normKey(p.label))) return p.parameter_code;
+    }
+
+    return PARAMETER_RAW;
+  }
+
+  if (SECTION === "vehicle_health"){
+    const data = await apiGetJSON(`/api/health_tabs/${encodeURIComponent(MODEL_NAME)}`);
+    const tabs = Array.isArray(data.health_tabs) ? data.health_tabs : [];
+    const rawKey = normKey(PARAMETER_RAW);
+
+    for (const t of tabs){
+      if (normKey(t.folder_code) === rawKey) return t.folder_code;
+      if (normKey(t.folder_name) === rawKey) return t.folder_code;
+    }
+
+    const cands = candidateCodes(PARAMETER_RAW).map(normKey);
+    for (const t of tabs){
+      if (cands.includes(normKey(t.folder_code)) || cands.includes(normKey(t.folder_name))) return t.folder_code;
+    }
+
+    return PARAMETER_RAW;
+  }
+
+  return PARAMETER_RAW;
+}
+
+/* ===================== Output limit helpers ===================== */
+function toNumber(v){
+  if (v === null || v === undefined) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+function checkWithinLimits(outputDict, limits){
+  if (!outputDict || typeof outputDict !== "object" || !Array.isArray(limits) || !limits.length) return true;
+  for (const lim of limits){
+    const sig = lim.signal;
+    if (!sig || outputDict[sig] === undefined) continue;
+    const val = toNumber(outputDict[sig]);
+    if (val === null) continue;
+    const lsl = toNumber(lim.lsl);
+    const usl = toNumber(lim.usl);
+    if (lsl !== null && val < lsl) return false;
+    if (usl !== null && val > usl) return false;
+  }
+  return true;
+}
+function formatFinalOutputForSingleSignal(test, resOutput){
+  if (typeof resOutput === "number" && Array.isArray(test.output_limits) && test.output_limits.length === 1){
+    const lim = test.output_limits[0];
+    const unit = lim?.unit ? ` ${lim.unit}` : "";
+    return `${resOutput}${unit}`;
+  }
+  return null;
+}
+function formatOutputCompact(payload, limits){
+  if (payload === null || payload === undefined) return { text: "–", ok: true };
+  if (typeof payload !== "object"){
+    const vnum = toNumber(payload);
+    if (!limits?.length || vnum === null) return { text: String(payload), ok: true };
+    const lim = limits[0];
+    const unit = lim?.unit ? ` ${lim.unit}` : "";
+    const ok = checkWithinLimits({[lim.signal]: vnum}, limits);
+    return { text: `${vnum}${unit}`, ok };
+  }
+  const parts = [];
+  for (const lim of (limits || [])){
+    const sig = lim.signal;
+    if (!sig) continue;
+    if (payload[sig] === undefined) continue;
+    const v = payload[sig];
+    const vnum = toNumber(v);
+    const unit = lim.unit ? ` ${lim.unit}` : "";
+    parts.push(`${sig}=${vnum !== null ? vnum : v}${unit}`);
+  }
+  if (!parts.length) return { text: JSON.stringify(payload), ok: true };
+  const ok = checkWithinLimits(payload, limits);
+  return { text: parts.join(" · "), ok };
+}
+function parseProgressJsonLine(line){
+  const m = line.match(/\[PROGRESS_JSON\]\s+(.*)$/);
+  if (!m) return null;
+  try { return JSON.parse(m[1]); } catch { return null; }
+}
+
+/* ===================== Task log polling ===================== */
+function startTaskLogPolling(taskId, onNewLine, targetAreaId = "logArea"){
+  if (perTaskLogTimers.has(taskId)) return;
+  let lastLen = 0;
+
+  const timer = setInterval(async () => {
+    try{
+      const text = await apiTaskLogs(taskId);
+      if (text.length < lastLen) lastLen = 0;
+      if (text.length === lastLen) return;
+
+      const chunk = text.substring(lastLen);
+      lastLen = text.length;
+
+      const lines = chunk.split("\n").filter(l => l.trim().length);
+      for (const line of lines){
+        appendLogLine(line, targetAreaId);
+        if (onNewLine) onNewLine(line);
+      }
+    }catch(e){
+      console.warn("Log polling error:", e);
+    }
+  }, 500);
+
+  perTaskLogTimers.set(taskId, timer);
+}
+
+function stopTaskLogPolling(taskId){
+  const t = perTaskLogTimers.get(taskId);
+  if (t){
+    clearInterval(t);
+    perTaskLogTimers.delete(taskId);
+  }
+}
+
+/* ===================== Controls ===================== */
+function setControls({runningAny, paused}){
+  const btnPause = document.getElementById("btnPause");
+  const btnResume = document.getElementById("btnResume");
+  const btnCancelAll = document.getElementById("btnCancelAll");
+
+  const anyStreaming = TESTS.some(t => t.execution_mode === "stream" || t.execution_mode === "live");
+  btnPause.disabled = !(runningAny && !paused && anyStreaming);
+  btnResume.disabled = !paused || !anyStreaming;
+  btnCancelAll.disabled = !runningAny;
+}
+
+/* ===================== EXECUTION CORE ===================== */
+async function runRowTest(test, rowEl, opts = {}){
+  const statusEl = rowEl.querySelector(".status");
+  const outputEl = rowEl.querySelector(".output");
+  const actionBtn = rowEl.querySelector("button[data-action='run']");
+  const cancelBtn = rowEl.querySelector("button[data-action='cancel']");
+
+  rowEl.classList.remove("success", "failed");
+  rowEl.classList.add("running");
+  statusEl.className = "status st-running";
+  statusEl.textContent = (test.execution_mode === "stream" || test.execution_mode === "live") ? "Streaming" : "Running";
+  if (outputEl) outputEl.classList.remove("value-within", "value-violation");
+
+  if (actionBtn){
+    actionBtn.disabled = true;
+    actionBtn.textContent = (test.execution_mode === "stream" || test.execution_mode === "live") ? "Streaming..." : "Running...";
+  }
+
+  if (cancelBtn && (test.execution_mode === "stream" || test.execution_mode === "live")){
+    cancelBtn.style.display = "inline-block";
+    cancelBtn.disabled = false;
+  } else if (cancelBtn){
+    cancelBtn.style.display = "none";
+  }
+
+  const user_inputs = opts.user_inputs || {};
+
+  let taskId;
+  try{
+    taskId = await apiRunTest(test.id, user_inputs);
+  }catch(e){
+    rowEl.classList.remove("running");
+    rowEl.classList.add("failed");
+    statusEl.className = "status st-failed";
+    statusEl.textContent = "Failed";
+    if (outputEl) outputEl.textContent = e.message || "Execution failed";
+    if (actionBtn){ actionBtn.disabled = false; actionBtn.textContent = test.button_name; }
+    if (cancelBtn) cancelBtn.style.display = "none";
+    return;
+  }
+
+  activeTaskIds.add(taskId);
+  updateLogStats();
+  setControls({runningAny:true, paused: globalPaused});
+
+  startTaskLogPolling(taskId, (line) => {
+    if (!outputEl) return;
+    const payload = parseProgressJsonLine(line);
+    if (!payload) return;
+
+    const { text, ok } = formatOutputCompact(payload, test.output_limits);
+    outputEl.textContent = text;
+
+    outputEl.classList.remove("value-within", "value-violation");
+    if (test.output_limits && test.output_limits.length){
+      outputEl.classList.add(ok ? "value-within" : "value-violation");
+    }
+  });
+
+  if (cancelBtn && (test.execution_mode === "stream" || test.execution_mode === "live")){
+    cancelBtn.onclick = async () => {
+      try{
+        userCancelledTaskIds.add(taskId);
+        await apiCancel(taskId);
+      }catch(e){}
+
+      rowEl.classList.remove("running");
+      rowEl.classList.add("success");
+      statusEl.className = "status st-success";
+      statusEl.textContent = "Success";
+      if (actionBtn){ actionBtn.disabled = false; actionBtn.textContent = test.button_name; }
+      cancelBtn.style.display = "none";
+
+      activeTaskIds.delete(taskId);
+      stopTaskLogPolling(taskId);
+      updateLogStats();
+      setControls({runningAny: activeTaskIds.size > 0, paused: globalPaused});
+    };
+  }
+
+  const monitor = setInterval(async () => {
+    if (globalPaused) return;
+
+    const st = await apiTaskStatus(taskId);
+    if (["PENDING","RUNNING","PAUSED"].includes(st.status)) return;
+
+    clearInterval(monitor);
+    stopTaskLogPolling(taskId);
+    activeTaskIds.delete(taskId);
+    updateLogStats();
+    setControls({runningAny: activeTaskIds.size > 0, paused: globalPaused});
+
+    if (userCancelledTaskIds.has(taskId) && (test.execution_mode === "stream" || test.execution_mode === "live")){
+      userCancelledTaskIds.delete(taskId);
+      return;
+    }
+
+    const res = st.result || {};
+    const passed = !!res.pass;
+
+    rowEl.classList.remove("running");
+    rowEl.classList.add(passed ? "success" : "failed");
+    statusEl.className = passed ? "status st-success" : "status st-failed";
+    statusEl.textContent = passed ? "Success" : "Failed";
+
+    if (outputEl){
+      if (res.output !== undefined && res.output !== null){
+        if (typeof res.output === "object"){
+          const { text, ok } = formatOutputCompact(res.output, test.output_limits);
+          outputEl.textContent = text;
+
+          outputEl.classList.remove("value-within", "value-violation");
+          if (test.output_limits && test.output_limits.length){
+            outputEl.classList.add(ok ? "value-within" : "value-violation");
+          }
+        } else {
+          const formatted = formatFinalOutputForSingleSignal(test, res.output);
+          outputEl.textContent = formatted || String(res.output);
+        }
+      } else if (res.exception){
+        outputEl.textContent = String(res.exception);
+      }
+
+      if (Array.isArray(res.limit_violations) && res.limit_violations.length){
+        outputEl.classList.remove("value-within");
+        outputEl.classList.add("value-violation");
+      }
+    }
+
+    if (actionBtn){
+      actionBtn.disabled = false;
+      actionBtn.textContent = test.button_name;
+    }
+    if (cancelBtn) cancelBtn.style.display = "none";
+  }, 800);
+}
+
+/* ===================== Renderers ===================== */
+function renderSequenceGrid(){
+  const container = document.getElementById("containerSequence");
+  container.innerHTML = "";
+
+  for (const test of TESTS){
+    const limitsText = (test.output_limits || []).map(l => {
+      if (!l.signal) return "";
+      const unit = l.unit ? ` ${l.unit}` : "";
+      const hasL = (l.lsl !== null && l.lsl !== undefined);
+      const hasU = (l.usl !== null && l.usl !== undefined);
+      if (hasL && hasU) return `${l.signal}: ${l.lsl}–${l.usl}${unit}`;
+      if (hasL) return `${l.signal}: ≥ ${l.lsl}${unit}`;
+      if (hasU) return `${l.signal}: ≤ ${l.usl}${unit}`;
+      return `${l.signal}`;
+    }).filter(Boolean).join(" · ");
+
+    const row = document.createElement("div");
+    row.className = "seq-row";
+    row.dataset.testId = test.id;
+
+    row.innerHTML = `
+      <div class="info">
+        <h6>${test.label}</h6>
+        <div class="desc">${test.description || "—"}</div>
+        ${limitsText ? `<div class="small text-muted mt-1"><em>Limits: ${limitsText}</em></div>` : ``}
+      </div>
+
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-sm btn-primary" data-action="run">${test.button_name}</button>
+        <button class="btn btn-sm btn-outline-danger" data-action="cancel" style="display:none;">Cancel</button>
+      </div>
+
+      <div class="output">–</div>
+      <div class="status st-idle" role="status">Idle</div>
+    `;
+
+    row.querySelector("button[data-action='run']").onclick = () => runRowTest(test, row, {user_inputs:{}});
+    container.appendChild(row);
+  }
+}
+
+function renderIuprSecondary(){
+  const container = document.getElementById("containerSequence");
+  container.innerHTML = "";
+
+  for (const test of TESTS){
+    const row = document.createElement("div");
+    row.className = "seq-row";
+    row.dataset.testId = test.id;
+
+    const inputs = (test.inputs || []).map(normInput);
+    const idPrefix = `t_${test.id}_`;
+
+    const inputsHtml = inputs.length
+      ? inputs.map(i => {
+          const handler = INPUT_TYPE_HANDLERS[i.type];
+          if (!handler) return "";
+          const control = handler.render(i, idPrefix);
+          return `
+            <div class="mb-2">
+              ${i.type === "bool"
+                ? control
+                : `<label class="form-label small mb-1">${i.label || i.name}${i.required ? ' <span class="text-danger">*</span>' : ''}</label>${control}`
+              }
+              ${i.hint && i.type !== "bool" ? `<div class="form-text">${i.hint}</div>` : ``}
+            </div>
+          `;
+        }).join("")
+      : `<div class="text-muted small">No inputs.</div>`;
+
+    row.innerHTML = `
+      <div class="info">
+        <h6>${test.label}</h6>
+        <div class="desc">${test.description || "—"}</div>
+      </div>
+
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-sm btn-outline-secondary" data-action="defaults">Set Default</button>
+        <button class="btn btn-sm btn-primary" data-action="run">${test.button_name}</button>
+      </div>
+
+      <div class="output">–</div>
+      <div class="status st-idle">Idle</div>
+
+      <div class="inline-inputs">${inputsHtml}</div>
+    `;
+
+    row.querySelector("button[data-action='defaults']").onclick = () => {
+      for (const i of inputs){
+        const el = document.getElementById(`${idPrefix}input_${i.name}`);
+        if (!el) continue;
+        if (i.type === "bool") el.checked = !!i.default;
+        else if (i.type === "select") el.value = (i.default ?? "");
+        else el.value = (i.default ?? "");
+        clearInputError(i.name, idPrefix);
+      }
+    };
+
+    row.querySelector("button[data-action='run']").onclick = () => {
+      const validation = validateAllInputs(inputs, idPrefix);
+      if (!validation.valid){
+        alert(`Please fix validation errors in: ${validation.errors.join(", ")}`);
+        return;
+      }
+      const user_inputs = collectInputs(inputs, idPrefix);
+      runRowTest(test, row, { user_inputs });
+    };
+
+    container.appendChild(row);
+    bindScanButtons(row);
+    attachRealTimeValidation(inputs, idPrefix);
+  }
+}
+
+function renderWriteDidList(){
+  const container = document.getElementById("containerSequence");
+  container.innerHTML = "";
+
+  for (const test of TESTS){
+    const tile = document.createElement("div");
+    tile.className = "tile";
+    tile.style.gridColumn = "span 12";
+    tile.innerHTML = `
+      <div class="left">
+        <div class="title">${test.label}</div>
+        <div class="subtitle">${test.description || "Write Data Identifier"}</div>
+      </div>
+      <div class="badges">
+        <span class="badge-soft single">SINGLE</span>
+        <span class="badge-soft">Click</span>
+      </div>
+    `;
+    tile.onclick = () => showInputsModalForTest(test, "Write Data Identifier");
+    container.appendChild(tile);
+  }
+}
+
+function renderDealerDetailsList(){
+  const container = document.getElementById("containerSequence");
+  container.innerHTML = "";
+
+  for (const test of TESTS){
+    const tile = document.createElement("div");
+    tile.className = "tile";
+    tile.style.gridColumn = "span 12";
+    tile.innerHTML = `
+      <div class="left">
+        <div class="title">${test.label}</div>
+        <div class="subtitle">${test.description || "Dealer Details"}</div>
+      </div>
+      <div class="badges">
+        <span class="badge-soft single">SINGLE</span>
+        <span class="badge-soft">Click</span>
+      </div>
+    `;
+    tile.onclick = () => showInputsModalForTest(test, "Dealer Details");
+    container.appendChild(tile);
+  }
+}
+
+function renderToggleList(){
+  const container = document.getElementById("containerSequence");
+  container.innerHTML = "";
+
+  for (const test of TESTS){
+    const row = document.createElement("div");
+    row.className = "toggle-row";
+    row.innerHTML = `
+      <div>
+        <div class="fw-bold">${test.label}</div>
+        <div class="small text-muted">${test.description || "—"}</div>
+      </div>
+      <div class="form-check form-switch m-0">
+        <input class="form-check-input" type="checkbox" id="toggle_${test.id}">
+      </div>
+    `;
+
+    const sw = row.querySelector(`#toggle_${test.id}`);
+    sw.onchange = async () => {
+      const modal = new bootstrap.Modal(document.getElementById("toggleStatusModal"));
+      document.getElementById("toggleModalTitle").textContent = test.label;
+
+      const statusDiv = document.getElementById("toggleStatus");
+      statusDiv.className = "flash-request p-3 rounded";
+      statusDiv.innerHTML = "<strong>Request sent...</strong><div class='small mt-1'>Please wait</div>";
+
+      const logSection = document.getElementById("toggleLogSection");
+      const logArea = document.getElementById("toggleLogArea");
+      logSection.style.display = "block";
+      logArea.textContent = "";
+
+      modal.show();
+
+      try{
+        const taskId = await apiRunTest(test.id, { enabled: sw.checked });
+        startTaskLogPolling(taskId, null, "toggleLogArea");
+
+        const timer = setInterval(async () => {
+          const st = await apiTaskStatus(taskId);
+          if (["PENDING","RUNNING","PAUSED"].includes(st.status)) return;
+
+          clearInterval(timer);
+          stopTaskLogPolling(taskId);
+
+          const passed = !!st.result?.pass;
+          if (passed){
+            statusDiv.className = "flash-success p-3 rounded";
+            statusDiv.innerHTML = "<strong>Completed successfully</strong>";
+          } else {
+            statusDiv.className = "flash-fail p-3 rounded";
+            statusDiv.innerHTML = `<strong>Failed</strong><div class="small mt-1">${st.result?.exception || "Unknown error"}</div>`;
+            sw.checked = !sw.checked;
+          }
+        }, 800);
+
+      }catch(e){
+        statusDiv.className = "flash-fail p-3 rounded";
+        statusDiv.innerHTML = `<strong>Error</strong><div class="small mt-1">${e.message}</div>`;
+        sw.checked = !sw.checked;
+      }
+    };
+
+    container.appendChild(row);
+  }
+}
+
+function renderDtcPage(){
+  const container = document.getElementById("containerSequence");
+  container.innerHTML = "";
+
+  const readTest = TESTS.find(t => t.function_role === "READ");
+  const clearTest = TESTS.find(t => t.function_role === "CLEAR");
+
+  const row = document.createElement("div");
+  row.className = "seq-row";
+  row.innerHTML = `
+    <div class="info">
+      <h6>${readTest ? readTest.label : "DTC Read"}</h6>
+      <div class="desc">${readTest?.description || "Read Diagnostic Trouble Codes and show in output"}</div>
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-sm btn-primary" data-action="read">Read DTC</button>
+      <button class="btn btn-sm btn-outline-danger" data-action="clear" ${clearTest ? "" : "disabled"}>Clear DTC</button>
+    </div>
+
+    <div class="output" style="white-space:pre-wrap;overflow:auto;min-height:80px;">–</div>
+    <div class="status st-idle">Idle</div>
+  `;
+
+  const out = row.querySelector(".output");
+  const stEl = row.querySelector(".status");
+
+  row.querySelector("button[data-action='read']").onclick = async () => {
+    if (!readTest){ showError("No DTC READ test defined (function_role=READ)"); return; }
+    stEl.className = "status st-running"; stEl.textContent = "Reading";
+    out.textContent = "Reading DTC...";
+    try{
+      const taskId = await apiRunTest(readTest.id, {});
+      const timer = setInterval(async () => {
+        const st = await apiTaskStatus(taskId);
+        if (["PENDING","RUNNING","PAUSED"].includes(st.status)) return;
+        clearInterval(timer);
+        if (st.result?.pass){
+          stEl.className = "status st-success"; stEl.textContent = "Success";
+          const o = st.result?.output;
+          if (Array.isArray(o)) out.textContent = o.length ? o.join("\n") : "No DTCs found";
+          else if (typeof o === "object") out.textContent = JSON.stringify(o, null, 2);
+          else out.textContent = (o != null ? String(o) : "No DTCs found");
+        } else {
+          stEl.className = "status st-failed"; stEl.textContent = "Failed";
+          out.textContent = st.result?.exception || "Failed";
+        }
+      }, 800);
+    }catch(e){
+      stEl.className = "status st-failed"; stEl.textContent = "Failed";
+      out.textContent = e.message;
+    }
+  };
+
+  row.querySelector("button[data-action='clear']").onclick = async () => {
+    if (!clearTest){ showError("No DTC CLEAR test defined (function_role=CLEAR)"); return; }
+    if (!confirm("Clear DTCs?")) return;
+    stEl.className = "status st-running"; stEl.textContent = "Clearing";
+    out.textContent = "Clearing DTC...";
+    try{
+      const taskId = await apiRunTest(clearTest.id, {});
+      const timer = setInterval(async () => {
+        const st = await apiTaskStatus(taskId);
+        if (["PENDING","RUNNING","PAUSED"].includes(st.status)) return;
+        clearInterval(timer);
+        if (st.result?.pass){
+          stEl.className = "status st-success"; stEl.textContent = "Success";
+          out.textContent = "DTC cleared successfully";
+        } else {
+          stEl.className = "status st-failed"; stEl.textContent = "Failed";
+          out.textContent = st.result?.exception || "Failed";
+        }
+      }, 800);
+    }catch(e){
+      stEl.className = "status st-failed"; stEl.textContent = "Failed";
+      out.textContent = e.message;
+    }
+  };
+
+  container.appendChild(row);
+}
+
+function renderFlashingList(){
+  const container = document.getElementById("containerSequence");
+  container.innerHTML = "";
+
+  for (const test of TESTS){
+    const tile = document.createElement("div");
+    tile.className = "tile";
+    tile.style.gridColumn = "span 12";
+    tile.innerHTML = `
+      <div class="left">
+        <div class="title">⚠️ ${test.label}</div>
+        <div class="subtitle">${test.description || "ECU flashing operation"}</div>
+      </div>
+      <div class="badges">
+        <span class="badge-soft flash">FLASH</span>
+        <span class="badge-soft">Click</span>
+      </div>
+    `;
+    tile.onclick = () => prepareFlashing(test);
+    container.appendChild(tile);
+  }
+}
+
+/* WDI modal */
+function _renderInputsInto(container, inputs){
+  container.innerHTML = "";
+  if (!inputs.length){
+    container.innerHTML = `<div class="alert alert-warning mb-0">No inputs defined for this test.</div>`;
+    return;
+  }
+
+  for (const raw of inputs){
+    const i = normInput(raw);
+    const handler = INPUT_TYPE_HANDLERS[i.type];
+    if (!handler) continue;
+
+    const wrap = document.createElement("div");
+    wrap.className = "mb-3";
+
+    if (i.type === "bool"){
+      wrap.innerHTML = handler.render(i, "");
+    } else {
+      wrap.innerHTML = `
+        <label class="form-label">${i.label || i.name}${i.required ? ' <span class="text-danger">*</span>' : ''}</label>
+        ${handler.render(i, "")}
+        ${i.hint ? `<div class="form-text">${i.hint}</div>` : ``}
+      `;
+    }
+    container.appendChild(wrap);
+  }
+}
+
+function showInputsModalForTest(test, titlePrefix){
+  const modal = new bootstrap.Modal(document.getElementById("wdiInputModal"));
+
+  document.getElementById("wdiModalTitle").textContent = `${titlePrefix}: ${test.label}`;
+  document.getElementById("wdiModalInfo").innerHTML = `
+    <div class="alert alert-info mb-0">
+      <strong>${test.label}</strong><br>
+      <small>${test.description || ""}</small>
+    </div>
+  `;
+
+  const statusBox = document.getElementById("wdiModalStatus");
+  const errBox = document.getElementById("wdiValidationErrors");
+  const logSection = document.getElementById("wdiLogSection");
+  const logArea = document.getElementById("wdiLogArea");
+
+  statusBox.style.display = "none";
+  errBox.style.display = "none";
+  logSection.style.display = "none";
+  logArea.textContent = "";
+
+  const submitBtn = document.getElementById("wdiSubmitBtn");
+  submitBtn.disabled = false;
+  submitBtn.textContent = test.button_name || "Submit";
+
+  const inputs = (test.inputs || []).map(normInput);
+  const container = document.getElementById("wdiInputContainer");
+  _renderInputsInto(container, inputs);
+
+  bindScanButtons(container);
+  attachRealTimeValidation(inputs, "");
+
+  document.getElementById("setDefaultBtn").onclick = () => {
+    for (const i of inputs){
+      const el = document.getElementById(`input_${i.name}`);
+      if (!el) continue;
+      if (i.type === "bool") el.checked = !!i.default;
+      else if (i.type === "select") el.value = (i.default ?? "");
+      else el.value = (i.default ?? "");
+      clearInputError(i.name, "");
+    }
+  };
+
+  document.getElementById("validateInputsBtn").onclick = () => {
+    const validation = validateAllInputs(inputs, "");
+    if (validation.valid){
+      errBox.style.display = "none";
+      statusBox.style.display = "block";
+      statusBox.className = "alert flash-success";
+      statusBox.textContent = "✓ All inputs are valid";
+      setTimeout(() => statusBox.style.display = "none", 2000);
+    } else {
+      errBox.style.display = "block";
+      errBox.innerHTML = `<strong>Validation Errors:</strong><ul class="mb-0 mt-1">${validation.errors.map(e=>`<li>${e}</li>`).join("")}</ul>`;
+      statusBox.style.display = "none";
+    }
+  };
+
+  document.getElementById("wdiClearLog").onclick = () => { logArea.textContent = ""; };
+
+  submitBtn.onclick = async () => {
+    errBox.style.display = "none";
+    const validation = validateAllInputs(inputs, "");
+    if (!validation.valid){
+      errBox.style.display = "block";
+      errBox.innerHTML = `<strong>Please fix the following errors:</strong><ul class="mb-0 mt-1">${validation.errors.map(e=>`<li>${e}</li>`).join("")}</ul>`;
+      return;
+    }
+
+    statusBox.style.display = "block";
+    statusBox.className = "alert flash-request";
+    statusBox.textContent = "Sending request...";
+    submitBtn.disabled = true;
+
+    logSection.style.display = "block";
+    logArea.textContent = "";
+
+    try{
+      const user_inputs = collectInputs(inputs, "");
+      const taskId = await apiRunTest(test.id, user_inputs);
+      startTaskLogPolling(taskId, null, "wdiLogArea");
+
+      const timer = setInterval(async () => {
+        const s = await apiTaskStatus(taskId);
+        if (["PENDING","RUNNING","PAUSED"].includes(s.status)) return;
+
+        clearInterval(timer);
+        stopTaskLogPolling(taskId);
+        submitBtn.disabled = false;
+
+        if (s.result?.pass){
+          statusBox.className = "alert flash-success";
+          statusBox.textContent = "✓ Completed successfully";
+        } else {
+          statusBox.className = "alert flash-fail";
+          statusBox.textContent = `✗ Failed: ${s.result?.exception || "Unknown error"}`;
+        }
+      }, 800);
+
+    }catch(e){
+      submitBtn.disabled = false;
+      statusBox.className = "alert flash-fail";
+      statusBox.textContent = `✗ Error: ${e.message || "Failed"}`;
+    }
+  };
+
+  modal.show();
+}
+
+/* Flashing inputs + flow */
+function renderFlashingInputs(test){
+  const container = document.getElementById("flashingInputFields");
+  const errorsDiv = document.getElementById("flashingInputErrors");
+  errorsDiv.style.display = "none";
+  container.innerHTML = "";
+
+  const inputs = (test.inputs || []).map(normInput);
+  if (!inputs.length){
+    container.innerHTML = `<div class="alert alert-info mb-0">No inputs declared. You may proceed.</div>`;
+    return;
+  }
+
+  for (const i of inputs){
+    const handler = INPUT_TYPE_HANDLERS[i.type];
+    if (!handler) continue;
+
+    const wrap = document.createElement("div");
+    wrap.className = "mb-2";
+    if (i.type === "bool"){
+      wrap.innerHTML = handler.render(i, "");
+    } else {
+      wrap.innerHTML = `
+        <label class="form-label small mb-1">${i.label || i.name}${i.required ? ' <span class="text-danger">*</span>' : ''}</label>
+        ${handler.render(i, "")}
+        ${i.hint ? `<div class="form-text">${i.hint}</div>` : ``}
+      `;
+    }
+    container.appendChild(wrap);
+  }
+
+  bindScanButtons(container);
+  attachRealTimeValidation(inputs, "");
+}
+
+async function prepareFlashing(test){
+  const confirmMessage = `⚠️ ECU FLASHING WARNING ⚠️
+
+Test: ${test.label}
+
+Do NOT disconnect power or CAN interface during flashing.
+
+Proceed?`;
+  if (!confirm(confirmMessage)) return;
+
+  const modal = new bootstrap.Modal(document.getElementById("flashingInputModal"));
+  document.getElementById("flashingInputTitle").textContent = `Flashing – ${test.label}`;
+  renderFlashingInputs(test);
+
+  document.getElementById("flashingInputSubmit").onclick = async () => {
+    const inputs = (test.inputs || []).map(normInput);
+    const validation = validateAllInputs(inputs, "");
+
+    if (!validation.valid){
+      const errDiv = document.getElementById("flashingInputErrors");
+      errDiv.style.display = "block";
+      errDiv.innerHTML = `<strong>Please fix errors:</strong><ul class="mb-0 mt-1">${validation.errors.map(e=>`<li>${e}</li>`).join("")}</ul>`;
+      return;
+    }
+
+    const user_inputs = collectInputs(inputs, "");
+    modal.hide();
+    await startFlashing(test, user_inputs);
+  };
+
+  modal.show();
+}
+
+async function startFlashing(test, user_inputs){
+  const modal = new bootstrap.Modal(document.getElementById("flashingModal"));
+  document.getElementById("flashingModalTitle").textContent = test.label;
+
+  const statusDiv = document.getElementById("flashingStatus");
+  const progress = document.getElementById("flashingProgress");
+  const percent = document.getElementById("flashingPercent");
+  const log = document.getElementById("flashingLog");
+  const btnCancel = document.getElementById("flashingCancel");
+  const btnClose = document.getElementById("flashingClose");
+
+  statusDiv.className = "flash-start p-3 rounded mb-3";
+  statusDiv.innerHTML = "<strong>Flashing Started</strong><div class='small'>Please do not disconnect...</div>";
+  progress.className = "progress-bar-custom flash-start animated";
+  progress.style.width = "0%";
+  percent.textContent = "0";
+  log.textContent = "";
+  btnClose.disabled = true;
+  btnCancel.disabled = false;
+
+  modal.show();
+
+  let taskId;
+  try{
+    taskId = await apiRunTest(test.id, user_inputs || {});
+  }catch(e){
+    statusDiv.className = "flash-fail p-3 rounded mb-3";
+    statusDiv.innerHTML = `<strong>Failed to start</strong><div class="small">${e.message}</div>`;
+    progress.className = "progress-bar-custom flash-fail";
+    btnCancel.disabled = true;
+    btnClose.disabled = false;
+    return;
+  }
+
+  btnCancel.onclick = async () => {
+    if (!confirm("Emergency Stop? This may damage the ECU.")) return;
+    await apiCancel(taskId);
+    statusDiv.className = "flash-fail p-3 rounded mb-3";
+    statusDiv.innerHTML = "<strong>Cancelled</strong><div class='small'>Stopped by user</div>";
+    progress.className = "progress-bar-custom flash-fail";
+    btnCancel.disabled = true;
+    btnClose.disabled = false;
+  };
+
+  let lastLen = 0;
+  let lastProgress = 0;
+
+  const timer = setInterval(async () => {
+    try{
+      const logText = await apiTaskLogs(taskId);
+      if (logText.length < lastLen) lastLen = 0;
+
+      if (logText.length > lastLen){
+        const chunk = logText.substring(lastLen);
+        lastLen = logText.length;
+        log.textContent += chunk;
+        log.scrollTop = log.scrollHeight;
+
+        const lines = chunk.split("\n");
+        for (const line of lines){
+          const m1 = line.match(/\[PROGRESS\s+(\d+)%\]/);
+          const m2 = line.match(/\b(\d{1,3})%\b/);
+          const m = m1 || m2;
+          if (m){
+            const p = Math.max(lastProgress, Math.min(100, parseInt(m[1], 10)));
+            if (p !== lastProgress){
+              lastProgress = p;
+              progress.style.width = `${p}%`;
+              percent.textContent = String(p);
+            }
+          }
+        }
+      }
+
+      const st = await apiTaskStatus(taskId);
+      if (["PENDING","RUNNING","PAUSED"].includes(st.status)) return;
+
+      clearInterval(timer);
+      btnCancel.disabled = true;
+      btnClose.disabled = false;
+
+      if (st.result?.pass){
+        statusDiv.className = "flash-success p-3 rounded mb-3";
+        statusDiv.innerHTML = "<strong>Flashed Successfully</strong><div class='small'>Completed</div>";
+        progress.className = "progress-bar-custom flash-success";
+        progress.style.width = "100%";
+        percent.textContent = "100";
+      } else {
+        statusDiv.className = "flash-fail p-3 rounded mb-3";
+        statusDiv.innerHTML = `<strong>Flashing Failed</strong><div class='small'>${st.result?.exception || "Unknown error"}</div>`;
+        progress.className = "progress-bar-custom flash-fail";
+      }
+
+    }catch(e){
+      clearInterval(timer);
+      btnCancel.disabled = true;
+      btnClose.disabled = false;
+      statusDiv.className = "flash-fail p-3 rounded mb-3";
+      statusDiv.innerHTML = "<strong>Error</strong><div class='small'>Communication lost</div>";
+      progress.className = "progress-bar-custom flash-fail";
+    }
+  }, 900);
+}
+
+/* ===================== Top controls ===================== */
+async function runAll(){
+  const runnable = TESTS.filter(t => t.supports_run_all !== false);
+  for (const t of runnable){
+    const row = document.querySelector(`.seq-row[data-test-id="${t.id}"]`);
+    if (!row) continue;
+    await runRowTest(t, row, {user_inputs:{}});
+    await new Promise(r => setTimeout(r, 250));
+  }
+}
+
+function markRowsPaused(paused) {
+  document.querySelectorAll(".seq-row.running .status").forEach(st => {
+    st.textContent = paused ? "Paused" : (st.textContent.includes("Stream") ? "Streaming" : "Running");
+    st.className = "status st-running";
+  });
+}
+
+async function pauseAll(){
+  globalPaused = true;
+  for (const id of Array.from(activeTaskIds)){
+    try{ await apiPause(id); }catch(e){}
+  }
+  markRowsPaused(true);
+  setControls({runningAny: activeTaskIds.size>0, paused:true});
+}
+
+async function resumeAll(){
+  globalPaused = false;
+  for (const id of Array.from(activeTaskIds)){
+    try{ await apiResume(id); }catch(e){}
+  }
+  markRowsPaused(false);
+  setControls({runningAny: activeTaskIds.size>0, paused:false});
+}
+
+async function cancelAll(){
+  for (const id of Array.from(activeTaskIds)){
+    userCancelledTaskIds.add(id);
+    try{ await apiCancel(id); }catch(e){}
+    stopTaskLogPolling(id);
+    activeTaskIds.delete(id);
+  }
+
+  document.querySelectorAll(".seq-row.running").forEach(row => {
+    const tid = row.dataset.testId;
+    const t = TESTS.find(x => x.id === tid);
+    const st = row.querySelector(".status");
+    const runBtn = row.querySelector("button[data-action='run']");
+    const cancelBtn = row.querySelector("button[data-action='cancel']");
+
+    row.classList.remove("running","failed","success");
+    if (t && (t.execution_mode === "stream" || t.execution_mode === "live")) {
+      row.classList.add("success");
+      if (st){ st.className = "status st-success"; st.textContent = "Success"; }
+    } else {
+      if (st){ st.className = "status st-idle"; st.textContent = "Idle"; }
+    }
+    if (runBtn){
+      runBtn.disabled = false;
+      runBtn.textContent = t?.button_name || "Run";
+    }
+    if (cancelBtn) cancelBtn.style.display = "none";
+  });
+
+  updateLogStats();
+  setControls({runningAny:false, paused:false});
+}
+
+/* ===================== Log controls ===================== */
+function setupLogButtons(){
+  document.getElementById("btnClearLog").onclick = () => {
+    const area = document.getElementById("logArea");
+    area.textContent = "";
+    logLineCount = 0;
+    updateLogStats();
+  };
+
+  document.getElementById("btnSaveLog").onclick = () => {
+    const text = document.getElementById("logArea").textContent || "";
+    const ts = new Date().toISOString().replace(/[:.]/g,"-");
+    const blob = new Blob([text], {type:"text/plain"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `nirix_log_${MODEL_NAME}_${PARAMETER_RAW}_${ts}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 800);
+  };
+}
+
+/* ===================== IUPR / DTC / Router ===================== */
+function isIuprPrimary(){ return String(PARAMETER_RAW || "").toUpperCase().endsWith("_PRIMARY"); }
+function isIuprSecondary(){ return String(PARAMETER_RAW || "").toUpperCase().endsWith("_SECONDARY"); }
+
+function setupIuprNav(){
+  const host = document.getElementById("iuprTopControls");
+  if (!host) return;
+  host.innerHTML = "";
+  if (PAGE_TYPE !== "IUPR") return;
+  if (!ECU) return;
+
+  if (isIuprPrimary()){
+    host.innerHTML = `
+      <a class="btn btn-sm btn-outline-primary"
+         href="/tests?model=${encodeURIComponent(MODEL_NAME)}&section=diagnostics&ecu=${encodeURIComponent(ECU)}&parameter=IUPR_SECONDARY">
+        Next → IUPR Secondary
+      </a>`;
+  } else if (isIuprSecondary()){
+    host.innerHTML = `
+      <a class="btn btn-sm btn-outline-secondary"
+         href="/tests?model=${encodeURIComponent(MODEL_NAME)}&section=diagnostics&ecu=${encodeURIComponent(ECU)}&parameter=IUPR_PRIMARY">
+        ← Back to IUPR Primary
+      </a>`;
+  }
+}
+
+function setupDtcTopControls(){
+  const host = document.getElementById("dtcTopControls");
+  if (!host) return;
+  host.innerHTML = "";
+  if (PAGE_TYPE !== "DTC") return;
+  host.innerHTML = `<span class="text-muted small">DTC Mode</span>`;
+}
+
+function disableTopRunAll() {
+  const btnRunAll = document.getElementById("btnRunAll");
+  if (btnRunAll) {
+    btnRunAll.disabled = true;
+    btnRunAll.classList.add("d-none");
+  }
+}
+
+function derivePageType(tests){
+  const types = Array.from(new Set(tests.map(t => t.parameter_page_type || "LIVE_PARAMETER")));
+  if (types.length > 1) console.warn("Mixed parameter_page_type detected:", types);
+  return types[0];
+}
+
+function renderByPageType(){
+  const anyStreaming = TESTS.some(t => t.execution_mode === "stream" || t.execution_mode === "live");
+  document.getElementById("btnPause").disabled = !anyStreaming;
+  document.getElementById("btnResume").disabled = true;
+  setControls({runningAny:false, paused:false});
+
+  setupIuprNav();
+  setupDtcTopControls();
+
+  if (PAGE_TYPE === "IUPR" && isIuprSecondary()){
+    renderIuprSecondary();
+    disableTopRunAll();
+    document.getElementById("btnPause").disabled = true;
+    document.getElementById("btnResume").disabled = true;
+    return;
+  }
+
+  if (PAGE_TYPE === "WRITE_DATA_IDENTIFIER"){
+    renderWriteDidList();
+    disableTopRunAll();
+    document.getElementById("btnPause").disabled = true;
+    document.getElementById("btnResume").disabled = true;
+    return;
+  }
+
+  if (PAGE_TYPE === "DEALER_DETAILS"){
+    renderDealerDetailsList();
+    disableTopRunAll();
+    document.getElementById("btnPause").disabled = true;
+    document.getElementById("btnResume").disabled = true;
+    return;
+  }
+
+  if (["INPUT_OUTPUT_CONTROL","ROUTINE_CONTROL","VEHICLE_HEALTH_IO"].includes(PAGE_TYPE)){
+    renderToggleList();
+    disableTopRunAll();
+    document.getElementById("btnPause").disabled = true;
+    document.getElementById("btnResume").disabled = true;
+    return;
+  }
+
+  if (PAGE_TYPE === "DTC"){
+    renderDtcPage();
+    disableTopRunAll();
+    document.getElementById("btnPause").disabled = true;
+    document.getElementById("btnResume").disabled = true;
+    return;
+  }
+
+  if (PAGE_TYPE === "ECU_FLASHING"){
+    renderFlashingList();
+    disableTopRunAll();
+    document.getElementById("btnPause").disabled = true;
+    document.getElementById("btnResume").disabled = true;
+    return;
+  }
+
+  renderSequenceGrid();
+}
+
+/* ===================== Load tests (server first, API fallback) ===================== */
+async function loadTests(){
+  setLoadMessage("info", "Loading tests…");
+
+  let loaded = (SERVER_TESTS_RAW || []).map(normalizeTest);
+
+  if (!loaded.length){
+    setLoadMessage("warning", "No tests received from server. Resolving parameter code and fetching from API…");
+
+    const resolved = await resolveParameterCode();
+    const attempts = Array.from(new Set([resolved, PARAMETER_RAW, ...candidateCodes(PARAMETER_RAW)]));
+
+    for (const p of attempts){
+      const apiTests = await apiFetchTests(MODEL_NAME, SECTION, ECU, p);
+      if (apiTests.length){
+        loaded = apiTests.map(normalizeTest);
+        break;
+      }
+    }
+  }
+
+  if (!loaded.length){
+    setLoadMessage("danger", "No tests defined for this parameter (DB returned empty). Most likely parameter code mismatch.");
+    return false;
+  }
+
+  TESTS = loaded;
+  PAGE_TYPE = derivePageType(TESTS);
+  hideLoadMessage();
+  return true;
+}
+
+/* ===================== FIX-25: Stream values polling ===================== */
+async function pollStreamValues() {
+  if (!AUTO_RUN_SESSION_ID) return;
+  
+  try {
+    const data = await apiGetStreamValues(AUTO_RUN_SESSION_ID);
+    if (!data.ok) return;
+    
+    const container = document.getElementById('streamValuesContainer');
+    const countEl = document.getElementById('streamCount');
+    const timestampEl = document.getElementById('streamTimestamp');
+    
+    if (!data.values || !data.values.length) {
+      container.innerHTML = '<div class="text-muted text-center py-3">Waiting for stream data...</div>';
+      if (countEl) countEl.textContent = '0 signals';
+      return;
+    }
+    
+    // Update count
+    if (countEl) countEl.textContent = `${data.values.length} signals`;
+    
+    // Update timestamp
+    if (timestampEl) {
+      const latest = data.values.reduce((max, v) => {
+        const t = new Date(v.updated_at || 0).getTime();
+        return t > max ? t : max;
+      }, 0);
+      if (latest > 0) {
+        timestampEl.textContent = `Last update: ${new Date(latest).toLocaleTimeString()}`;
+      }
+    }
+    
+    // Group by program
+    const byProgram = {};
+    data.values.forEach(v => {
+      if (!byProgram[v.program_id]) byProgram[v.program_id] = [];
+      byProgram[v.program_id].push(v);
+    });
+    
+    let html = '';
+    for (const [programId, values] of Object.entries(byProgram)) {
+      html += `<div class="mb-3"><strong>${programId}</strong>`;
+      values.forEach(v => {
+        const withinClass = v.is_within_limit ? 'within' : 'violation';
+        html += `
+          <div class="stream-value-row">
+            <span class="label">${v.signal_name}:</span>
+            <span>
+              <span class="value ${withinClass}">${v.signal_value}</span>
+              ${v.signal_unit ? `<span class="unit">${v.signal_unit}</span>` : ''}
+              ${v.is_within_limit === false ? ' ⚠️' : ''}
+            </span>
+          </div>
+        `;
+      });
+      html += '</div>';
+    }
+    
+    container.innerHTML = html;
+    lastStreamUpdate = new Date();
+    
+  } catch (e) {
+    console.error('Failed to poll stream values:', e);
+  }
+}
+
+/* ===================== INIT ===================== */
+document.addEventListener("DOMContentLoaded", async () => {
+  setupLogButtons();
+  updateLogStats();
+
+  const btnRunAll = document.getElementById("btnRunAll");
+  if (btnRunAll) btnRunAll.onclick = runAll;
+  document.getElementById("btnPause").onclick = pauseAll;
+  document.getElementById("btnResume").onclick = resumeAll;
+  document.getElementById("btnCancelAll").onclick = cancelAll;
+
+  const ok = await loadTests();
+  if (!ok) return;
+
+  renderByPageType();
+  bindScanButtons(document);
+  
+  // FIX-25: Start stream polling if auto-run session exists
+  if (AUTO_RUN_SESSION_ID) {
+    // Poll immediately
+    await pollStreamValues();
+    // Then every second
+    streamPollInterval = setInterval(pollStreamValues, 1000);
+  }
+});
+
+/* Pause log polling when tab hidden; resume when visible */
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden){
+    for (const [taskId, timer] of perTaskLogTimers.entries()){
+      clearInterval(timer);
+      perTaskLogTimers.delete(taskId);
+    }
+    // Pause stream polling when hidden
+    if (streamPollInterval) {
+      clearInterval(streamPollInterval);
+      streamPollInterval = null;
+    }
+  } else {
+    for (const id of Array.from(activeTaskIds)) {
+      startTaskLogPolling(id, null, "logArea");
+    }
+    // Resume stream polling
+    if (AUTO_RUN_SESSION_ID && !streamPollInterval) {
+      pollStreamValues();
+      streamPollInterval = setInterval(pollStreamValues, 1000);
+    }
+  }
+});
+
+/* Warn before leaving if tasks active */
+window.addEventListener("beforeunload", (ev) => {
+  if (activeTaskIds.size > 0){
+    ev.preventDefault();
+    ev.returnValue = "Tests are running. Leave anyway?";
+    return ev.returnValue;
+  }
+});
+
+// Cleanup on page unload
+window.addEventListener("unload", () => {
+  if (streamPollInterval) {
+    clearInterval(streamPollInterval);
+    streamPollInterval = null;
+  }
+});
+</script>
+{% endif %}
+
+{% endblock %}

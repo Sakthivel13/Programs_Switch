@@ -1,0 +1,111 @@
+{
+  "schema_version": "1.0",
+  "vehicle": "TVS iQube ST",
+  "sections": [
+    {
+      "name": "Diagnostics",
+      "slug": "diagnostics",
+      "section_type": "diagnostics",
+      "description": "ECU diagnostics and parameter monitoring",
+      "icon": "icons/diagnostics.svg",
+      "sort_order": 1,
+      "auto_run_programs": [
+        {
+          "program_id": "AUTO_ECU_ACTIVE_CHECK",
+          "program_name": "ECU Active Check",
+          "program_type": "single",
+          "module_name": "ecu_active_check",
+          "function_name": "check_all_ecus",
+          "execution_mode": "single",
+          "display_type": "status",
+          "display_label": "ECU Status",
+          "display_unit": null,
+          "display_pages": ["section", "ecu"],
+          "ecu_targets": ["BMS"],
+          "output_limits": [
+            { 
+              "signal": "ecus_ok", 
+              "lsl": 1, 
+              "usl": 1, 
+              "unit": null 
+            }
+          ],
+          "fallback_action": "warn_and_continue",
+          "fallback_input": null,
+          "log_as_vin": false,
+          "is_required": true,
+          "timeout_sec": 20,
+          "sort_order": 1
+        },
+        {
+          "program_id": "AUTO_VIN_READ",
+          "program_name": "VIN Read",
+          "program_type": "single",
+          "module_name": "vin_read",
+          "function_name": "read_vin",
+          "execution_mode": "single",
+          "display_type": "text",
+          "display_label": "VIN",
+          "display_unit": null,
+          "display_pages": ["section", "ecu", "parameter"],
+          "ecu_targets": ["BMS"],
+          "output_limits": [],
+          "fallback_action": "manual_input",
+          "fallback_input": {
+            "label": "Enter VIN",
+            "input_type": "string",
+            "length": 17,
+            "format_hint": "17-character VIN (no I, O, Q)",
+            "is_required": true
+          },
+          "log_as_vin": true,
+          "is_required": true,
+          "timeout_sec": 15,
+          "sort_order": 5
+        },
+        {
+          "program_id": "AUTO_BATTERY_VOLTAGE",
+          "program_name": "Battery Voltage",
+          "program_type": "stream",
+          "module_name": "battery_voltage",
+          "function_name": "read_battery_voltage_stream",
+          "execution_mode": "stream",
+          "display_type": "value",                    // FIXED: Changed from "numeric" to "value"
+          "display_label": "Battery Voltage",
+          "display_unit": "V",
+          "display_pages": ["section", "ecu", "parameter"],
+          "ecu_targets": ["BMS"],
+          "output_limits": [
+            { 
+              "signal": "battery_voltage", 
+              "lsl": 10.0, 
+              "usl": 13.6, 
+              "unit": "V" 
+            }
+          ],
+          "fallback_action": "none",                   // FIXED: Streams shouldn't have fallback
+          "fallback_input": null,
+          "log_as_vin": false,
+          "is_required": false,                        // FIXED: Streams should be optional
+          "timeout_sec": 0,
+          "sort_order": 10
+        }
+      ],
+      "is_active": true,
+      "ecus": ["BMS"],
+      "health_tabs": []
+    },
+    {
+      "name": "Vehicle Health Report",
+      "slug": "vehicle_health",
+      "section_type": "vehicle_health",
+      "description": "Comprehensive vehicle health assessment",
+      "icon": "icons/vehicle_health.svg",
+      "sort_order": 2,
+      "auto_run_programs": [],
+      "is_active": true,
+      "ecus": [],
+      "health_tabs": []
+    }
+  ]
+}
