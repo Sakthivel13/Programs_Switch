@@ -1,1 +1,5 @@
-# Programs_Switch
+Now we need to create the tool like PCAN View which is like the interface tool that captures all the communication signals from the vehicle to the system and system to the vehicle as well in any communication layers like USB, Wi-fi, Bluetooth. First we need to connect our interface to the VCI in these communication layers, after that we had the connect and disconnect button where we can set the bitrate, clock frequency, acceptance filter etc...
+
+
+
+Actually, we need to do some modifications, like in the section_tests.json, we need to add only two auto-run programs (VIN and Battery Voltage), and in the ecu_tests.json, we need to add one auto-run program(ECU active check). After clicking diagnostics, the section_tests.json auto_run program should run and show result in that page itself, if it fails then the pop up UI opens for Manual VIN entry after that this entered VIN should be displayed in the Specified Page, as mentioned in display pages. The same goes for battery_voltage here it has the lsl and usl limits with the colour results. When it comes to ECU page, it should automatically run the auto_run program that is mentioned in the ecu_tests.json, here if the ECU is active it should show the green colour in the top right corner in that respective horizontal grid and same goes for if ECU is not active it should show in red colour.
