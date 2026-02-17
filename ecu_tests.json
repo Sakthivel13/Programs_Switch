@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "vehicle": "TVS iQube ST",
+  "ecus": [
+    {
+      "ecu_code": "BMS",
+      "ecu_name": "BMS",
+      "description": "Battery Management System ECU",
+      "protocol": "UDS",
+      "emission": "OBDII",
+      "icon": "icons/microchip.svg",
+      "is_active": true,
+      "sort_order": 1,
+      "parameters": [
+        {
+          "parameter_code": "LIVE_PARAMETER",
+          "label": "Live Parameters",
+          "description": "Streaming signals like Voltage, Emission etc.",
+          "icon": "icons/wave-square.svg",
+          "execution_class": "STREAM",
+          "sort_order": 1,
+          "is_active": true
+        },
+        {
+          "parameter_code": "WRITE_DATA_IDENTIFIER",
+          "label": "Write Data Identifier",
+          "description": "Writing data into the ECU ex: vin, mac, date, time etc.",
+          "icon": "icons/edit.svg",
+          "execution_class": "SINGLE",
+          "sort_order": 2,
+          "is_active": true
+        }
+      ]
+    }
+  ]
+}
