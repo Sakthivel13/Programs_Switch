@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nirix.tvsmotor.com/schema/ecu_tests.schema.json",
+  "title": "ECU Tests Definition",
+  "description": "Defines ECU details and their parameters for a vehicle",
+  "type": "object",
+  "required": ["vehicle", "ecus"],
+
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "default": "1.0"
+    },
+
+    "vehicle": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Must match app.vehicles.name"
+    },
+
+    "ecus": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/ecu" }
+    }
+  },
+
+  "additionalProperties": false,
+
+  "$defs": {
+    "ecu": {
+      "type": "object",
+      "required": ["ecu_code", "ecu_name"],
+
+      "properties": {
+        "ecu_code": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "minLength": 1,
+          "description": "Unique ECU identifier - maps to diagnostic_folders.ecu_code"
+        },
+
+        "ecu_name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Display name for ECU"
+        },
+
+        "description": {
+          "type": ["string", "null"],
+          "description": "ECU description"
+        },
+
+        "protocol": {
+          "type": ["string", "null"],
+          "description": "Communication protocol (e.g., UDS, KWP, OEM, CAN)"
+        },
+
+        "emission": {
+          "type": ["string", "null"],
+          "description": "Emission standard (e.g., BS6, BS4, Euro5, OBDII, EV)"
+        },
+
+        "icon": {
+          "type": ["string", "null"],
+          "description": "Icon identifier (e.g., fa-microchip)"
+        },
+
+        "is_active": {
+          "type": "boolean",
+          "default": true
+        },
+
+        "sort_order": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+
+        "parameters": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/parameter" },
+          "default": []
+        }
+      },
+
+      "additionalProperties": false
+    },
+
+    "parameter": {
+      "type": "object",
+      "required": ["parameter_code", "label"],
+
+      "properties": {
+        "parameter_code": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "minLength": 1,
+          "description": "Maps to diagnostic_actions.parameter_code"
+        },
+
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Display name - maps to diagnostic_actions.label"
+        },
+
+        "description": {
+          "type": ["string", "null"],
+          "description": "Parameter description"
+        },
+
+        "icon": {
+          "type": ["string", "null"],
+          "description": "Icon identifier"
+        },
+
+        "execution_class": {
+          "type": "string",
+          "enum": ["STREAM", "SINGLE", "FLASH", "DUAL"],
+          "default": "SINGLE",
+          "description": "DUAL is for IUPR (Primary=STREAM, Secondary=SINGLE)"
+        },
+
+        "sort_order": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+
+        "is_active": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+
+      "additionalProperties": false
+    }
+  }
+}
